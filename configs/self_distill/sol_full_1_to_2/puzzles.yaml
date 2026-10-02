@@ -1,0 +1,13 @@
+# Canonical 35k tactical-puzzle seed mixture for one self-distillation round.
+seed: 20260828
+output: data/self_distill/sol_full_2/positions/puzzles_000.jsonl
+puzzles:
+  rating_buckets:
+    - {name: le_1200,      max_inclusive: 1200, count: 7000}
+    - {name: 1200_to_1400, min_exclusive: 1200, max_inclusive: 1400, count: 3500}
+    - {name: 1400_to_1600, min_exclusive: 1400, max_inclusive: 1600, count: 3500}
+    - {name: 1600_to_1800, min_exclusive: 1600, max_inclusive: 1800, count: 3500}
+    - {name: 1800_to_2000, min_exclusive: 1800, max_inclusive: 2000, count: 3500}
+    - {name: 2000_to_2200, min_exclusive: 2000, max_inclusive: 2200, count: 3500}
+    - {name: 2200_to_2400, min_exclusive: 2200, max_inclusive: 2400, count: 3500}
+    - {name: 2400_to_3000, min_exclusive: 2400, max_inclusive: 3000, count: 7000}

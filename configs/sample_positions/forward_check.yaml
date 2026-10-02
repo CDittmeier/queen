@@ -1,0 +1,7 @@
+# Stage-4 forward: positions where the side to move is in check, applied to the
+# END of a 1-8 ply forward variation. Same gate as check.yaml, but each record is
+# a 5-field forward triple (presented Q = P - k + history, k saved moves Q->P,
+# final FEN P); the in_check predicate gates the final board P. See forward.yaml.
+features: [in_check]
+per_game: 4
+lookahead_ply: [1, 8]

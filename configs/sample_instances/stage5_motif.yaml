@@ -1,0 +1,44 @@
+# Stage-5.motif: supervised annotation of thresholded positional/material motifs
+# and clear-best tactical motifs mined into structured JSONL records.
+#
+# For ordinary game rows the builder draws N uniformly from [0, 8], using the
+# final N+7 stored plies: seven for LC0 history and N in the question. Puzzle
+# rows preserve their sole genuine setup ply as LC0 history and use N=0. The
+# response is a globally ordered, strictly parseable bullet list.
+#
+# Training retains the original one-million game-position sample, then appends
+# every unique puzzle row on which the controlled detector found a tactical
+# motif (105,936 before eval-position exclusion). Evaluation positions are
+# removed from both groups by the builder's normal FEN-level split deduplication.
+
+seed: 0
+pov: true
+output_path: data/stage5/motif
+
+tasks:
+  hce_motif_annotation:
+    num_positions: 1105936
+    num_questions: 1
+    source_groups:
+      - shards: ["data/lichess/stage5_motifs/train-00[0-7].jsonl"]
+        num_positions: 1000000
+      - shards: ["data/lichess/stage5_motifs/puzzles/puzzle-*.jsonl"]
+        num_positions: 105936
+        require_motif_source: tactical
+
+splits:
+  train:
+    shards: ["data/lichess/stage5_motifs/train-00[0-7].jsonl"]
+  val:
+    # Multi-label stratification balances all motifs, including rare tactics.
+    # The selected per-motif counts are saved in val_dataset.arrow metadata.
+    shards:
+      - "data/lichess/stage5_motifs/train-008.jsonl"
+      - "data/lichess/stage5_motifs/puzzles/puzzle-*.jsonl"
+    per_task: 800
+    num_questions: 1
+    stratify_motifs: true
+  test:
+    shards: ["data/lichess/stage5_motifs/train-009.jsonl"]
+    per_task: 1000
+    num_questions: 1

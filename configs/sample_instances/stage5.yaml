@@ -1,0 +1,37 @@
+# Stage-5 machine-readable HCE-rationale datagen.
+#
+#   sbatch scripts/datagen/datagen_stage5.sbatch
+#
+# For each sampled position, run the search + verbalization pipeline
+# (datagen/tree/get_tree) and store its TOKEN narrative as the response — a
+# machine-readable analysis that never spells out pieces, colors, files, ranks,
+# diagonals, or moves in English (it reuses the same BoardRepr token vocabulary as
+# stages 1-4). get_tree is a ~5 s single-threaded job, so throughput comes from
+# processing positions in parallel: datagen/tree/parallelize.py runs one worker per
+# --cpus-per-task, each owning its own Stockfish / lc0 / judge subprocesses.
+#
+# From the builder's point of view this is just another task (`hce_rationale`);
+# num_questions is 1 (one analysis per position), num_positions sets the train size.
+
+seed: 0
+pov: true                               # POV-relative tokens (M*/O*), matching stages 1-4
+output_path: data/stage5
+
+tasks:
+  hce_rationale: {num_positions: 200000, num_questions: 1}
+
+# Positions come from the stage-5 allocation only (rated_2018-10 train_ shards
+# [00050-00074], sampled by scripts/datagen/sample_stage5.sbatch) — disjoint from the
+# stage-1/2 jsonls. All three splits draw from the same train shards; the builder runs
+# test -> val -> train, threading a shared seen-FEN set, so they are position-disjoint.
+splits:
+  train:
+    shards: ["data/lichess/stage5/train-*.jsonl"]
+  val:
+    shards: ["data/lichess/stage5/train-*.jsonl"]
+    per_task: 200
+    num_questions: 1
+  test:
+    shards: ["data/lichess/stage5/train-*.jsonl"]
+    per_task: 500
+    num_questions: 1

@@ -1,0 +1,6 @@
+# Stage-4 forward: stalemate positions (game-ending stalemate), applied to the END
+# of a 1-8 ply forward variation. Same gate as stalemate.yaml; forward 5-field
+# records gating the final board P. Supply-limited, like stalemate.yaml.
+features: [is_stalemate]
+per_game: 1
+lookahead_ply: [1, 8]

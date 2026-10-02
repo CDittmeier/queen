@@ -1,0 +1,55 @@
+# Stage-4 SmolLM3 FLAMINGO (cross-attention bridge), bridge lr 2e-4 cosine.
+#
+# Provenance: trained by jc93 as stage4_exp1/stage4_smollm_flamingo_2e-4 from
+# configs/train_sweeps/s4e1/flamingo_2e-4.yaml, warm-started off the stage-3
+# flamingo winner. The checkpoint is symlinked into our tree at
+#   runs/stage4_smollm_flamingo_2e-4/step_0048000  ->  .../jeff/p-chess-lm/...
+# It reports overall/correct 0.973 on the stage-4 val set at step 48000.
+#
+# This file exists so the checkpoint is loadable from OUR repo (eval + stage-5
+# warm start) without reaching into a colleague's config tree. Paths below are
+# already ours -- their run trained against our decoder/encoder/data.
+#
+# Decoder is FROZEN (lora_rank -1): trainable params are the 16 x_attn bridge
+# layers + the 77 POV token embeddings, 470M total.
+
+# --- model ---
+arch: flamingo
+lora_rank: -1           # decoder fully frozen; bridges + new embeddings only
+dtype: bfloat16
+compile: true
+compile_mode: default
+use_liger_loss: false        # chunked CE path, works under torch.compile
+reshard_after_forward: false
+decoder_path: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/local/SmolLM3-3B
+encoder_path: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/engines/lc0_hf_bt5
+embed_init: semantic
+
+# --- data ---  (train_with_mix = 80% stage-4 + 8/6/6% stage-3/2/1 replay; pov: true)
+train_dataset: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/stage4/train_with_mix.arrow
+eval_dataset:  /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/stage4/val_dataset.arrow
+num_workers: 4
+
+# --- training (global batch 256 on 2 GPUs: 8 * 16 * 2) ---
+batch_size: 8
+grad_accum_steps: 16
+max_seq_len: 512
+lr: 2.0e-4
+embed_lr: ~
+weight_decay: 0.1
+scheduler: cosine
+min_lr_rate: 0.05
+warmup_ratio: 0.05
+max_grad_norm: 1.0
+n_steps: 100000
+
+# --- eval / checkpoint ---
+eval_freq: 2000
+eval_batch_size: 8
+eval_max_new_tokens: 384
+eval_max_examples: 600
+log_samples: 4
+
+# --- output ---
+exp_name: stage4_smollm_flamingo_2e-4
+output_dir: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/runs

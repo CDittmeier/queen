@@ -1,0 +1,7 @@
+# Stage-4 forward: a check <= near_plies before a game-ending checkmate (not the
+# mate itself), applied to the END of a 1-8 ply forward variation. Same gate as
+# check_near_mate.yaml; forward 5-field records gating the final board P.
+features: [in_check, near_mate]
+near_plies: 6
+per_game: 1
+lookahead_ply: [1, 8]

@@ -1,0 +1,51 @@
+# Stage-5 training — LLaVA arch, decoder UNFROZEN, warmup-then-CONSTANT LR.
+# Same recipe as stage 4. Deltas: warm-start from the stage-4 checkpoint; 100% stage-5
+# (hce_rationale) data with NO mix-back of earlier stages; a much longer max_seq_len (the
+# rationales run ~1.2k median / 8.1k max tokens vs stage-1..4's short answers); a 4xH100 launch;
+# and the output dir. Because seq 8400 won't fit micro-batch 8, batch_size is 1 and grad_accum 64,
+# so the global batch is 1 * 64 * 4 = 256 — matching stage-4's effective batch.
+#
+#   sbatch scripts/train/train_stage5_llava.sbatch \
+#          configs/train/stage5/llava_stage5_unfrozen_const.yaml
+
+# --- model ---   (identical to stage 4)
+arch: llava
+lora_rank: 0
+dtype: bfloat16
+compile: false
+compile_mode: default
+reshard_after_forward: false
+decoder_path: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/local/SmolLM3-3B
+encoder_path: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/engines/lc0_hf_bt5
+embed_init: semantic
+
+# --- warm start ---  (stage-4 final checkpoint; weights only, fresh optimizer/scheduler/step)
+
+# --- data ---  (100% stage-5 hce_rationale — no mix-back of earlier stages)
+train_dataset: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/stage5/train_all.arrow
+eval_dataset:  /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/stage5/val_dataset.arrow
+num_workers: 4
+
+# --- training ---
+batch_size: 1           # seq 8400 won't fit a larger micro-batch on 80GB
+grad_accum_steps: 8
+max_seq_len: 8400       # fits the full rationale (max observed 8112 tokens); no truncation
+n_steps: 3
+lr: 1.0e-5
+weight_decay: 0.1
+scheduler: constant     # warmup then flat LR (every checkpoint a valid "final")
+warmup_ratio: 0.05
+max_grad_norm: 1.0
+
+# --- eval / checkpoint ---
+eval_freq: 100000
+eval_batch_size: 4          # smaller than stage-4's 8 for the much longer eval sequences
+eval_max_new_tokens: 2048   # capped for eval efficiency; a full-8400 eval (regret + mate rate)
+                            # is run separately on promising checkpoints
+eval_max_examples: 200      # full stage-5 val set (single task)
+log_samples: 4
+
+# --- output ---
+exp_name: stage5_llava_unfrozen_const
+output_dir: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/runs
+attn_implementation: sdpa

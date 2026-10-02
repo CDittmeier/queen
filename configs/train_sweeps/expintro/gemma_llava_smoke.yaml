@@ -1,0 +1,55 @@
+# Gemma3-4B SMOKE TEST — LLaVA arch, decoder UNFROZEN (full fine-tune).
+#   part of: sbatch scripts/train_sweeps/gemma_smoke.sbatch
+#
+# Purpose: end-to-end validation of the Gemma plumbing, NOT a real recipe.
+# Exercises: adapter_for(gemma3) build, FSDP wrap on Gemma3DecoderLayer, the
+# LLaVA MLP-prefix path through HF's full Gemma forward, new-token embed scaling
+# (sqrt(hidden_size)), one ckpt save/reload, and eval generation stopping on
+# <end_of_turn>. This is the memory-tight config (4B full-FT, ~55-65GB/rank per
+# gemma_plan D3) — reshard_after_forward=true + small batch keep it in budget; if
+# it OOMs, drop batch_size and/or raise grad_accum_steps.
+
+# =============================================================================
+# SWEEP PARAMS
+# =============================================================================
+arch: llava             # {llava, flamingo}
+lora_rank: 0            # 0 = full fine-tune (decoder unfrozen)
+lr: 2.0e-4              # bridge LR
+decoder_lr: 1.0e-5      # explicit decoder LR
+scheduler: cosine       # {cosine, constant}
+n_steps: 20
+exp_name: gemma_llava_smoke
+
+# =============================================================================
+# FIXED PARAMS
+# =============================================================================
+# --- model ---
+dtype: bfloat16
+compile: true           # match production exp4 (isolation test: does compile trigger the save desync?)
+reshard_after_forward: true   # full-FT 4B: reshard to stay under 80GB/rank
+decoder_path: /scratch/gpfs/DANQIC/jeff/models/gemma3-4b
+encoder_path: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/engines/lc0_hf_bt5
+embed_init: semantic
+
+# --- data ---
+train_dataset: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/stage1/train_all.arrow
+eval_dataset:  /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/stage1/val_dataset.arrow
+num_workers: 4
+
+# --- training (smoke sizing; not the real recipe) ---
+batch_size: 2           # small: full-FT 4B is the OOM-risk config
+grad_accum_steps: 4
+max_seq_len: 512
+weight_decay: 0.1
+warmup_ratio: 0.0
+max_grad_norm: 1.0
+
+# --- eval / checkpoint ---
+eval_freq: 10           # ckpt cadence = eval cadence; 2 evals at 10/20
+eval_batch_size: 8
+eval_max_new_tokens: 50  # capped: bounds distinct seq-lengths → far fewer torch.compile recompiles
+eval_max_examples: 700   # back to full eval — re-test the condition that ground for 20 min
+log_samples: 4
+
+# --- output ---
+output_dir: /scratch/gpfs/DANQIC/jeff/p-chess-lm/runs

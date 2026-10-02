@@ -1,0 +1,35 @@
+# Canonical model-vs-Stockfish seed sampling and post-play selection policy.
+seed: 42
+# Assign a unique output basename and job name for each shard.
+output: data/self_distill/stage7_001.games.jsonl
+play:
+  # Resumable state lives in scratch_dir/job; cleaned after durable raw publication.
+  job: stage7_001
+  scratch_dir: data/scratch/self_distill_play
+  # Assign disjoint [game_start, game_start + games) ranges when sharing a seed.
+  game_start: 0
+  concurrent_games: 128
+  opponent_nodes_min: 100
+  opponent_nodes_max: 100000
+  stockfish_workers: 6
+  max_plies: 200
+
+  # Flamingo generation. Prefix caching is always disabled by the generator.
+  max_output_tokens: 4096
+  temperature: 0.6
+  top_k: 20
+  top_p: 0.95
+  gpu_memory_utilization: 0.78
+  max_num_seqs: 128
+  use_v1_vllm: false  # V2 default; CLI --use-v1-vllm overrides this.
+
+score:
+  # CPU-only stage reads the durable .games.jsonl, not gameplay scratch state.
+  oracle_nodes: 100000
+  stockfish_workers: 6
+
+  # Keep all unique >=5pp mistakes, plus ceil(played plies / 10) ordinary
+  # positions per game, sampled across the whole game. Before sampling,
+  # downsample ordinary |eval|>=2.5 positions fourfold; allow quota shortfalls.
+  force_keep_winrate_drop: 0.05
+  high_eval_downsample: 4

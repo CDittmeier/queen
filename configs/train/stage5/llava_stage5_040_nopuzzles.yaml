@@ -1,0 +1,58 @@
+# Stage-5 on the 2026-08 regenerated 0/0/40 data (d3, tactic-motif labels), GAME POSITIONS ONLY —
+# the no-puzzle arm of the puzzle-mix comparison (counterpart: llava_stage5_040_puzzles100k.yaml,
+# same common val split). Training recipe identical to llava_stage5_040_fp32.yaml.
+#   scripts/train/train_stage5_hce040.sh nopuzzles
+
+# --- model ---
+arch: llava
+lora_rank: 0
+dtype: bfloat16
+compile: true
+compile_mode: default
+use_liger_loss: false   # chunked CE path, works under torch.compile
+reshard_after_forward: true
+activation_checkpointing: true
+activation_checkpointing_every_n: 2
+sync_each_batch: false
+attn_implementation: sdpa
+decoder_path: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/local/SmolLM3-3B
+encoder_path: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/engines/lc0_hf_bt5
+embed_init: semantic
+
+fp32_master_weights: true
+fsdp_mixed_precision: true
+fsdp_reduce_dtype: float32
+fused_optimizer: true
+
+# --- warm start ---  (stage-4 step_0144000)
+init_from: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/runs/stage4_llava_unfrozen_const/step_0144000
+
+# --- data ---  (regenerated 0/0/40 game shards, ~1.13M rows, motif labels; no puzzles)
+train_dataset: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/stage5/0-0-40/train_all.arrow
+eval_dataset:  /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/stage5/0-0-40/val_dataset.arrow
+num_workers: 4
+length_grouping: true
+length_group_pool_size: 512
+
+# --- training ---  (2 * 16 * 8 GPUs = 256 global)
+batch_size: 2
+grad_accum_steps: 16
+max_seq_len: 8192
+n_steps: 20000
+lr: 1.0e-5
+weight_decay: 0.1
+scheduler: constant
+warmup_ratio: 0.05
+max_grad_norm: 1.0
+
+# --- eval / checkpoint ---
+save_freq: 400
+eval_freq: 400
+eval_loss_only: true
+eval_batch_size: 1
+eval_max_examples: 200
+log_samples: 4
+
+# --- output ---
+exp_name: stage5_llava_040_nopuzzles
+output_dir: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/runs

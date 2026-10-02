@@ -1,0 +1,84 @@
+# Stage-2 dynamic-task datagen — real run.
+#
+#   sbatch scripts/datagen_stage2.sbatch        # builds + concatenates
+#
+# Built by datagen/build_qa_dataset.py (unified builder). Per-task position
+# sourcing uses the `mix:` interleave: each source is a jsonl glob or the literal
+# 'shards' (= the split's own pool, set under `splits` below). Sources are
+# deterministically interleaved by their fractions, deduped across all streams,
+# and a source that runs dry drops out while the survivors keep their relative
+# shares. A task with no `mix` just draws from the split pool (the generic pool).
+#
+# Position sources (materialized by datagen/sample_positions.py into data/lichess/):
+#   generic          random positions          (split pool)
+#   check            side-to-move is in check
+#   have_check       side-to-move HAS a legal checking move   (job 9923115)
+#   checkmate        checkmate positions
+#   check_near_mate  a check <=6 ply before a game-ending mate
+#   stalemate        stalemate positions        (supply-limited: ~18.6k train)
+#
+# Special-source globs carry a `{split}` placeholder: the builder fills it with
+# 'train' for the train split and 'val-test' for the val/test splits, so every
+# split (including the mixed tasks) is game-level disjoint per source — train reads
+# each type's train_*.jsonl, evals read its val-test_*.jsonl. The generic component
+# ('shards') is split-aware too, via the per-split `shards` below.
+
+seed: 0
+pov: true
+output_path: data/stage2
+
+tasks:
+  # --- generic-pool tasks (no mix): natural distributions are fine ---
+  piece_moves:
+    num_positions: 457143
+    num_questions: 4
+
+  square_attackers:
+    num_positions: 457143
+    num_questions: 4              # MAX_UNIQUE_QUERIES=64; internal empty/occupant balance
+
+  capture_moves:
+    num_positions: 1828572
+    num_questions: 1
+
+  # --- mixed-source tasks ---
+  checking_moves:                # lift the share of with-check positions (~4:1)
+    num_positions: 1828572
+    num_questions: 1
+    mix:
+      - {source: "shards",                                   frac: 0.2}   # generic
+      - {source: "data/lichess/have_check/{split}_*.jsonl",  frac: 0.8}
+
+  check_parries:                 # only meaningful on in-check positions
+    num_positions: 1828572
+    num_questions: 1
+    mix:
+      - {source: "data/lichess/check/{split}_*.jsonl",       frac: 1.0}
+
+  is_checkmate:                  # 30% mate / 20% near-mate-check / 10% check / 5% stalemate / 35% random
+    num_positions: 360000        # stalemate held at 5%; supply (18.6k train) caps this ~372k
+    num_questions: 1
+    mix:
+      - {source: "data/lichess/checkmate/{split}_*.jsonl",        frac: 0.30}
+      - {source: "data/lichess/check_near_mate/{split}_*.jsonl",  frac: 0.20}
+      - {source: "data/lichess/check/{split}_*.jsonl",            frac: 0.10}
+      - {source: "data/lichess/stalemate/{split}_*.jsonl",        frac: 0.05}
+      - {source: "shards",                                        frac: 0.35}   # generic
+
+splits:
+  train:
+    shards: ["data/lichess/generic/train-*.jsonl"]
+
+  val:
+    shards: ["data/lichess/generic/val_test-*.jsonl"]
+    per_task: 100
+    num_questions: 1
+
+  test:
+    shards: ["data/lichess/generic/val_test-*.jsonl"]
+    per_task: 1000
+    num_questions: 1
+
+  # No test_modeA: shared-positions mode A applies every task to the same positions
+  # and can't run `mix` tasks (it would also break check_parries, which needs
+  # in-check positions). Stage-2 evals are per_task only.

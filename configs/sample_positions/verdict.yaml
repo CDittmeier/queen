@@ -1,0 +1,11 @@
+# Stage-5.a verdict-position sampling (datagen.sample_positions verdict mode):
+# per game, one random ply is classified through the percentile-gated verdict
+# classes (datagen.tree.strong_primitives — mate/tactic, positional at the frozen
+# activity thresholds, material, dynamic/dry balance) and survivors are written
+# as the standard [start_fen, moves, end_fen] triples. Class balance follows
+# the seeded keep probabilities plus a running cap of cap_per_million rows per
+# class per million candidates scanned. Needs Stockfish; budget ~1-2 s per
+# candidate position.
+verdict: true
+per_game: 1
+cap_per_million: 20000

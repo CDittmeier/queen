@@ -1,0 +1,58 @@
+# Stage-3 (stage3_exp1) — smollm flamingo, bridge_lr sweep 1/4 (lr=2.5e-5).
+#
+# Warm-starts from the Stage-2 test winner (SmolLM3 Flamingo 8e-5, step 32k) and trains on Stage-3
+# forward tasks with 86/8/6 Stage-3/2/1 data mix. Deltas from the Stage-2 recipe:
+# init_from, Stage-3 data, eval_max_examples, output_dir/exp_name.
+
+# =============================================================================
+# SWEEP PARAMS
+# =============================================================================
+arch: flamingo
+lora_rank: -1
+lr: 2.5e-5              # bridge LR (cosine-decayed); frozen decoder, no decoder group
+embed_lr: ~                 # default: lr * 0.1 auto-scale
+scheduler: cosine
+min_lr_rate: 0.05       # cosine floor: decay stops at 5% of peak LR
+n_steps: 30000
+exp_name: stage3_smollm_flamingo_2.5e-5
+
+# --- warm start ---
+# Overlay trainable params from the Stage-2 winner's trainable.pt (strict=False),
+# then train from step 0 with a FRESH optimizer/scheduler/data order (NOT resume).
+init_from: /scratch/gpfs/DANQIC/jeff/p-chess-lm/runs/stage2_exp1/stage2_smollm_flamingo_8e-5/step_0032000
+
+# =============================================================================
+# FIXED PARAMS
+# =============================================================================
+# --- model ---
+dtype: bfloat16
+compile: true
+compile_mode: default
+reshard_after_forward: false
+decoder_path: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/local/SmolLM3-3B
+encoder_path: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/engines/lc0_hf_bt5
+embed_init: semantic
+
+# --- data ---
+# train_with_mix.arrow = 86% Stage-3 train_all + 8% Stage-2 + 6% Stage-1 replay.
+train_dataset: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/stage3/train_with_mix.arrow
+eval_dataset:  /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/stage3/val_dataset.arrow
+num_workers: 4
+
+# --- training (global batch 256 on 2 GPUs: 8 * 16 * 2) ---
+batch_size: 8
+grad_accum_steps: 16
+max_seq_len: 512
+weight_decay: 0.1
+warmup_ratio: 0.05
+max_grad_norm: 1.0
+
+# --- eval / checkpoint ---
+eval_freq: 2000
+eval_batch_size: 8
+eval_max_new_tokens: 384
+eval_max_examples: 700   # full Stage-3 val set (100/task * 7)
+log_samples: 4
+
+# --- output ---
+output_dir: /scratch/gpfs/DANQIC/jeff/p-chess-lm/runs/stage3_exp1

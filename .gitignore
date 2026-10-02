@@ -1,0 +1,62 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+.venv-inference/
+
+# Model weights and checkpoints
+*.pt
+*.ckpt
+*.safetensors
+*.bin
+*.npz
+*.npy
+*.pkl
+
+# Training run directories
+runs_dryrun/
+runs/
+.runpkg/
+
+# HuggingFace datasets (binary arrow files)
+*.arrow
+data/
+
+# Claude Plans
+plans/
+experiments/
+
+# Unit tests
+datagen/tests/
+models/adapters/tests.py
+models/depr_*.py
+
+
+# Hanoi
+hanoi/
+
+# virtual env/
+.venv/
+
+# ---- kept at repo root, local-only (not part of the unified repo) ----
+# Heavy stores / external symlinks, lab scratch space, and per-machine files.
+/local
+/data/
+/reports/
+!/reports/
+/reports/*
+!/reports/2026-08-08_stage5-tactical-benchmark.md
+!/reports/mainstreaming_plan.md
+!/reports/sd-iter-benchmarks.md
+/lab/
+/joblog
+/CLAUDE.md
+/ASSUMPTIONS.md
+/claude.resume
+/.claude/
+/.venv.bak-py310/
+/vllm_venv
+
+# helpers
+helpers/

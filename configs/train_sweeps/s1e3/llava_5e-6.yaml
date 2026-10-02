@@ -1,0 +1,51 @@
+# Exp3 — LLaVA decoder_lr sweep, run 3/3 (lowest LR — low-priority job).
+# Fixed: arch=llava, lora_rank=0 (full FT), bridge lr=2e-4, cosine + min_lr_rate=0.05.
+# Swept axis: decoder_lr.
+
+# =============================================================================
+# SWEEP PARAMS
+# =============================================================================
+arch: llava
+lora_rank: 0
+lr: 2.0e-4              # bridge LR (cosine-decayed)
+decoder_lr: 5.0e-6      # explicit decoder LR — overrides the lr*0.1 auto-scale
+embed_lr:   2.0e-5      # explicit new_embed LR — overrides the lr*0.1 auto-scale
+scheduler: cosine
+min_lr_rate: 0.05       # cosine floor: decay stops at 5% of peak LR (per param group)
+n_steps: 25000
+exp_name: stage1_llava_5e-6
+
+# =============================================================================
+# FIXED PARAMS
+# =============================================================================
+# --- model ---
+dtype: bfloat16
+compile: true
+compile_mode: default
+reshard_after_forward: false
+decoder_path: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/local/SmolLM3-3B
+encoder_path: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/engines/lc0_hf_bt5
+embed_init: semantic
+
+# --- data ---
+train_dataset: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/stage1/train_all.arrow
+eval_dataset:  /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/stage1/val_dataset.arrow
+num_workers: 4
+
+# --- training (global batch 256 on 2 GPUs: 8 * 16 * 2) ---
+batch_size: 8
+grad_accum_steps: 16
+max_seq_len: 512
+weight_decay: 0.1
+warmup_ratio: 0.05
+max_grad_norm: 1.0
+
+# --- eval / checkpoint ---
+eval_freq: 2000
+eval_batch_size: 8
+eval_max_new_tokens: 384
+eval_max_examples: 700
+log_samples: 4
+
+# --- output ---
+output_dir: /scratch/gpfs/DANQIC/jeff/p-chess-lm/runs

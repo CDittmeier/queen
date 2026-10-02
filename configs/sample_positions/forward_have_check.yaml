@@ -1,0 +1,6 @@
+# Stage-4 forward: positions where the side to move has >=1 legal checking move,
+# applied to the END of a 1-8 ply forward variation. Same gate as have_check.yaml;
+# forward 5-field records gating the final board P.
+features: [has_check]
+per_game: 4
+lookahead_ply: [1, 8]

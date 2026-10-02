@@ -1,0 +1,45 @@
+# Stage-1 training — LLaVA arch, decoder FROZEN, cosine schedule, 60k steps.
+# Extends the 40k frozen-cosine run (val was still improving past 40k).
+#   sbatch scripts/train_stage1_llava.sbatch configs/train/stage1/llava_frozen_cos_60k.yaml
+#
+# Trains: connector + file/rank embeds + new_embed only.
+# Frozen: the full SmolLM3 decoder AND the lc0 BT5 encoder.
+
+# --- model ---
+arch: llava
+lora_rank: -1           # <0 = decoder frozen (only the bridge / new params train)
+dtype: bfloat16
+compile: true           # torch.compile (mode=default); ~1.33x with reshard off (bench 2026-06-16)
+compile_mode: default   # reduce-overhead's cudagraphs break on this model
+use_liger_loss: false        # chunked CE path, works under torch.compile
+reshard_after_forward: false  # 3B fits unsharded on 2x80GB; halves all-gathers
+decoder_path: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/local/SmolLM3-3B
+encoder_path: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/engines/lc0_hf_bt5
+embed_init: semantic
+
+# --- data (POV, equal 1,828,572 records/task; concatenated to one arrow) ---
+train_dataset: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/stage1/train_all.arrow
+eval_dataset:  /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/stage1/val_dataset.arrow
+num_workers: 4
+
+# --- training ---
+batch_size: 4           # per-device micro-batch
+grad_accum_steps: 16    # 4 * 16 * 4 GPUs = 256 global
+max_seq_len: 512        # fits SmolLM3 system prompt + verbose count-task answers (max ~419 tok)
+n_steps: 60000
+lr: 2.5e-5
+weight_decay: 0.1
+scheduler: cosine
+warmup_ratio: 0.05
+max_grad_norm: 1.0
+
+# --- eval / checkpoint ---
+eval_freq: 2000         # also the checkpoint cadence (enables --resume-from); 60000 is a multiple -> final saved
+eval_batch_size: 8
+eval_max_new_tokens: 384
+eval_max_examples: 700  # full val set (100/task * 7)
+log_samples: 4
+
+# --- output ---
+exp_name: stage1_llava_frozen_cos_60k
+output_dir: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/runs

@@ -1,0 +1,20 @@
+# Unhinted Qwen editor recipe from iteration-06-redo.
+stage: consolidate
+input_dir: data/self_distill/sol_full_2/rebalanced/all_sources
+output_dir: data/self_distill/sol_full_2/consolidated
+start_index: 0
+end_index: null
+tasks:
+  - {input: shard_00000.jsonl, output: shard_00000}
+  - {input: shard_00001.jsonl, output: shard_00001}
+  - {input: shard_00002.jsonl, output: shard_00002}
+  - {input: shard_00003.jsonl, output: shard_00003}
+parameters:
+  model: models/Qwen3-32B
+  material_hints: false
+  chunk_size: 64
+  max_model_len: 16384
+  max_output_tokens: 8192
+  max_num_seqs: 16
+  gpu_memory_utilization: 0.92
+  enforce_eager: false

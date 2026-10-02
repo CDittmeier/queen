@@ -1,0 +1,8 @@
+# Stage-3 forward positions — no feature gate, with a move-sequence lookahead.
+# Same sampling as random.yaml (features: [], per_game: 5) but each record is a
+# forward triple: the presented position Q = P - k, its <=7-ply history, then the
+# k saved moves Q->P and the final FEN P. k is drawn per position ~ randint(1, 8)
+# (capped near the opening so Q stays past START_PLY). See sample_positions.py.
+features: []
+per_game: 5
+lookahead_ply: [1, 8]

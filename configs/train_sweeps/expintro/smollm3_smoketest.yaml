@@ -1,0 +1,52 @@
+# Stage-1 SMOKE TEST config — chain smoke (300 steps, ckpt every 100, 10min slots).
+#   sbatch scripts/train_sweeps/smoke_test.sbatch
+#
+# Designed to force the auto-resume + self-chain logic in train_stage1_sweep.sbatch:
+# each 10min slot advances ~one checkpoint (100 steps), so reaching n_steps=300
+# requires 3 chain hops per array index. The sbatch launches 2 array indices and
+# overrides --exp-name to "<exp_name>_<array_idx>" so the two chains don't collide
+# on the checkpoint dir or wandb run id.
+
+# =============================================================================
+# SWEEP PARAMS  (held to the flamingo baseline; arch doesn't matter for chain mech)
+# =============================================================================
+arch: flamingo          # {llava, flamingo}
+lora_rank: -1           # 0 = full fine-tune (decoder unfrozen) | -1 = decoder frozen (bridge-only)
+lr: 1.0e-5
+scheduler: cosine       # {cosine, constant}
+n_steps: 300
+exp_name: smoke_chain   # sbatch appends _<SLURM_ARRAY_TASK_ID> per chain
+
+# =============================================================================
+# FIXED PARAMS
+# =============================================================================
+# --- model ---
+dtype: bfloat16
+compile: false          # skip torch.compile warmup (~2 min) so each 10min slot has time to advance a ckpt
+reshard_after_forward: false
+decoder_path: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/local/SmolLM3-3B
+encoder_path: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/engines/lc0_hf_bt5
+embed_init: semantic
+
+# --- data ---
+train_dataset: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/stage1/train_all.arrow
+eval_dataset:  /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/stage1/val_dataset.arrow
+num_workers: 4
+
+# --- training (smoke sizing: bs4 * accum16 * 2 GPUs = 128 global; not the real recipe) ---
+batch_size: 4
+grad_accum_steps: 16
+max_seq_len: 512
+weight_decay: 0.1
+warmup_ratio: 0.0       # no warmup at 300 steps
+max_grad_norm: 1.0
+
+# --- eval / checkpoint ---
+eval_freq: 100          # ckpt cadence matches eval cadence; 3 evals total at 100/200/300
+eval_batch_size: 4
+eval_max_new_tokens: 384
+eval_max_examples: 14   # 2/task * 7 tasks — just enough to confirm eval works
+log_samples: 4
+
+# --- output ---
+output_dir: /scratch/gpfs/DANQIC/jeff/p-chess-lm/runs

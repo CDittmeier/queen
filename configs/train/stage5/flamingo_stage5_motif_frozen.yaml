@@ -1,0 +1,60 @@
+# Stage-5.motif: predict a strictly parseable list of thresholded positional,
+# material, and tactical motifs. This retires Stage-5.line while retaining its
+# frozen-decoder Flamingo training hyperparameters and global batch size 256.
+
+# --- model ---
+arch: flamingo
+lora_rank: -1
+dtype: bfloat16
+compile: true
+compile_mode: default
+use_liger_loss: false
+reshard_after_forward: true
+activation_checkpointing: true
+activation_checkpointing_every_n: 2
+sync_each_batch: false
+attn_implementation: sdpa
+decoder_path: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/local/SmolLM3-3B
+encoder_path: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/engines/lc0_hf_bt5
+embed_init: semantic
+
+fp32_master_weights: true
+fsdp_mixed_precision: true
+fsdp_reduce_dtype: float32
+fused_optimizer: true
+
+# --- warm start ---
+init_from: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/runs/stage4_smollm_flamingo_2e-4/step_0048000
+
+# --- data ---
+train_dataset: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/stage5/motif/training_datasets/hce_motif_annotation.arrow
+eval_dataset: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/stage5/motif/val_dataset.arrow
+num_workers: 4
+length_grouping: true
+length_group_pool_size: 512
+
+# --- training (2 * 16 * 8 GPUs = 256 global) ---
+batch_size: 2
+grad_accum_steps: 16
+max_seq_len: 8192
+n_steps: 30000
+lr: 1.0e-5
+weight_decay: 0.1
+scheduler: constant
+warmup_ratio: 0.05
+max_grad_norm: 1.0
+
+# --- generative validation / checkpoint ---
+# The strict task grader reports exact motif-and-side validation accuracy. We
+# intentionally do not set eval_loss_only: token-level val loss is not the
+# validation signal for this stage.
+save_freq: 400
+eval_freq: 1200
+eval_batch_size: 4
+eval_max_new_tokens: 1024
+eval_max_examples: 800
+log_samples: 4
+
+# --- output ---
+exp_name: stage5_flamingo_motif_frozen
+output_dir: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/runs

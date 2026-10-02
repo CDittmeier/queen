@@ -1,0 +1,84 @@
+# Stage-4 dynamic forward-task datagen — the stage-2 dynamic tasks, each answered
+# on the board reached after a 1-8 ply move sequence ("After the moves <seq>,
+# <stage-2 question>").
+#
+#   sbatch scripts/datagen/datagen_stage4.sbatch    # (build only; positions come
+#                                                     from sample_forward.sbatch +
+#                                                     sample_forward_special.sbatch)
+#
+# Same six dynamic tasks, per-task counts, and source interleave as stage 2, but
+# `lookahead: true` makes build_qa_dataset read the 5-field forward records and
+# route each task through its `sample_n_forward`. The presented board is Q (the
+# record's index-[2] FEN); each task answers on the board after the saved
+# sequence. mover_label names "player"/"opponent" by the final side to move, so
+# after an odd-length sequence the queried side is the opponent — intended.
+#
+# Position sources are the FORWARD pools under data/lichess/ (forward = generic,
+# produced by sample_forward.sbatch; forward_check / forward_have_check /
+# forward_checkmate / forward_check_near_mate / forward_stalemate, produced by
+# sample_forward_special.sbatch). The `{split}` placeholder fills 'train' for the
+# train split and 'val-test' for the eval splits, so every split is game-level
+# disjoint per source. The generic component ('shards') is split-aware via the
+# per-split `shards` below.
+#
+# Game-level split mirrors stage 1/2/3: train = forward train shards (2018-10),
+# val/test = the forward val_test shard (2017-06), deduped by the builder. No
+# test_modeA: shared-positions mode A has no forward form (and can't run `mix`
+# tasks), so evals are per_task only, as in stage 2/3.
+
+seed: 0
+pov: true
+lookahead: true
+output_path: data/stage4
+
+tasks:
+  # --- generic-pool tasks (no mix): natural distributions are fine ---
+  piece_moves:
+    num_positions: 457143
+    num_questions: 4
+
+  square_attackers:
+    num_positions: 457143
+    num_questions: 4              # MAX_UNIQUE_QUERIES=64; internal empty/occupant balance
+
+  capture_moves:
+    num_positions: 1828572
+    num_questions: 1
+
+  # --- mixed-source tasks (same fractions as stage 2, forward pools) ---
+  checking_moves:                # lift the share of with-check positions (~4:1)
+    num_positions: 1828572
+    num_questions: 1
+    mix:
+      - {source: "shards",                                           frac: 0.2}   # generic (forward)
+      - {source: "data/lichess/forward_have_check/{split}_*.jsonl",  frac: 0.8}
+
+  check_parries:                 # only meaningful when the FINAL side to move is in check
+    num_positions: 1828572
+    num_questions: 1
+    mix:
+      - {source: "data/lichess/forward_check/{split}_*.jsonl",       frac: 1.0}
+
+  is_checkmate:                  # 30% mate / 20% near-mate-check / 10% check / 5% stalemate / 35% generic
+    num_positions: 360000        # stalemate held at 5%; forward_stalemate supply may cap this
+    num_questions: 1
+    mix:
+      - {source: "data/lichess/forward_checkmate/{split}_*.jsonl",        frac: 0.30}
+      - {source: "data/lichess/forward_check_near_mate/{split}_*.jsonl",  frac: 0.20}
+      - {source: "data/lichess/forward_check/{split}_*.jsonl",            frac: 0.10}
+      - {source: "data/lichess/forward_stalemate/{split}_*.jsonl",        frac: 0.05}
+      - {source: "shards",                                               frac: 0.35}   # generic (forward)
+
+splits:
+  train:
+    shards: ["data/lichess/forward/train-*.jsonl"]
+
+  val:
+    shards: ["data/lichess/forward/val_test-*.jsonl"]
+    per_task: 100
+    num_questions: 1
+
+  test:
+    shards: ["data/lichess/forward/val_test-*.jsonl"]
+    per_task: 1000
+    num_questions: 1

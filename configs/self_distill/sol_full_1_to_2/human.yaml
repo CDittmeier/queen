@@ -1,0 +1,6 @@
+# Use a disjoint, explicitly named PGN source; no motif gate or lookahead.
+seed: 20260828
+output: data/self_distill/sol_full_2/positions/human_000.jsonl
+features: []
+per_game: 5
+lookahead_ply: 0

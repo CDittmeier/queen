@@ -1,0 +1,53 @@
+# Stage-1 curriculum datagen — real run (derived from configs/sample_datagen.yaml).
+#
+#   sbatch scripts/datagen_stage1.sbatch        # samples shards, builds, concatenates
+#
+# Target: equal examples per task, 50,000 steps' worth of unique batches of 256
+#   => 50000 * 256 = 12,800,000 train records, /7 tasks = 1,828,572 each.
+# num_questions is kept at the collaborator's defaults; num_positions is set so
+# every task lands on the same record count. The two count tasks emit 1 record
+# per position (MAX_UNIQUE_QUERIES=1), so they each consume ~1.83M positions.
+# Total positions consumed ~= 7.47M; the sampler uses n_per_game=5 to make ~12M
+# positions available from the 25 train shards.
+#
+# Game-level split (no shared games between train and val/test):
+#   train  = data/lichess_dbs/allocated/stage1/train_* (2018-10)
+#   val/test = the single allocated val_test shard (2017-06), deduped by the builder.
+
+seed: 0
+pov: true                            # POV-relative tokens (M*/O*).
+output_path: data/stage1
+
+tasks:
+  piece_on_square:    {num_positions: 457143,  num_questions: 4}   # 457143*4 = 1,828,572
+  square_of_piece:    {num_positions: 914286,  num_questions: 2}   # 914286*2 = 1,828,572
+  piece_on_file:      {num_positions: 914286,  num_questions: 2}
+  piece_on_rank:      {num_positions: 914286,  num_questions: 2}
+  piece_on_diagonal:  {num_positions: 609524,  num_questions: 3}   # 609524*3 = 1,828,572
+  piece_count:        {num_positions: 1828572, num_questions: 1}
+  material_count:     {num_positions: 1828572, num_questions: 1}
+
+splits:
+  train:
+    shards: ["data/lichess/train-*.jsonl"]
+
+  # Single held-out val_test shard feeds both; builder runs test first (joins
+  # `seen`), then val (skips `seen`), so the two eval sets share no position.
+  # per_task counts mirror the legacy stage-1 run (val 100/task, test 1000/task).
+  val:
+    shards: ["data/lichess/val_test-*.jsonl"]
+    per_task: 100
+    num_questions: 1
+
+  test:
+    shards: ["data/lichess/val_test-*.jsonl"]
+    per_task: 1000
+    num_questions: 1
+
+  # Mode A exhaustive test set: every possible question of each type (capped at
+  # each task's MAX_UNIQUE_QUERIES) on each of N held-out positions. Built right
+  # after `test` and threaded through `seen`, so it is disjoint from both the
+  # Mode B test set above and from val. → test_dataset_modeA.arrow
+  test_modeA:
+    shards: ["data/lichess/val_test-*.jsonl"]
+    num_positions: 100

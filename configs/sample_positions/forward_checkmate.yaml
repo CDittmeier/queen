@@ -1,0 +1,6 @@
+# Stage-4 forward: checkmate positions (the game-ending mate), applied to the END
+# of a 1-8 ply forward variation (mate-in-k style: play k moves, reach mate).
+# Same gate as checkmate.yaml; forward 5-field records gating the final board P.
+features: [is_checkmate]
+per_game: 1
+lookahead_ply: [1, 8]

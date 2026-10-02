@@ -1,0 +1,3 @@
+# Checkmate positions (the game-ending mate).
+features: [is_checkmate]
+per_game: 1        # at most one per game

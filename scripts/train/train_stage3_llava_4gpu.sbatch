@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+#SBATCH --job-name=train_stage3_llava_4gpu
+#SBATCH --output=/scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/joblog/%A-%x.out
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=32
+#SBATCH --gres=gpu:4
+#SBATCH --constraint=gpu80
+#SBATCH --mem=120G
+#SBATCH --time=08:00:00
+#SBATCH --partition=pli-c
+#SBATCH --qos=pli-cp
+#
+# Stage-3 LLaVA training (POV). Cold start warm-starts from the stage-2 checkpoint
+# named by `init_from:` in the config (weights only, fresh optimizer/step); every
+# later slot auto-resumes its own newest stage-3 checkpoint via --resume-from,
+# which makes train.py skip the warm start. Self-chains across 8h pli-cp slots
+# until n_steps; the chain stops at completion or if a slot makes no progress.
+#   sbatch scripts/train/train_stage3_llava_4gpu.sbatch \
+#          configs/train/stage3/llava_stage3_unfrozen_const_4gpu.yaml
+set -euo pipefail
+
+REPO=/scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm
+CONFIG="${1:-$REPO/configs/train/stage3/llava_stage3_unfrozen_const_4gpu.yaml}"
+[ $# -gt 0 ] && shift   # pass any remaining args through
+VENV="$REPO/.venv"
+source "$VENV/bin/activate"
+
+export PYTHONPATH="$REPO:${PYTHONPATH:-}"
+
+# Reduce CUDA allocator fragmentation so the post-eval checkpoint all-gather has
+# room (long-CoT eval generation otherwise reserves nearly the whole card; the
+# in-code empty_cache() before save plus this setting keep the save from OOMing).
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+
+# wandb: offline (compute nodes have no internet); sync later with `wandb sync`
+export WANDB_MODE=offline
+export WANDB_PROJECT=chesslm-stage3
+export WANDB_DIR="$REPO/runs"
+
+# --- auto-resume + self-chaining across 8h pli-cp slots ---
+EXP=$(awk '/^exp_name:/{print $2}' "$CONFIG")
+RUN="$(awk '/^output_dir:/{print $2}' "$CONFIG")/$EXP"
+NSTEPS=$(awk '/^n_steps:/{print $2}' "$CONFIG")
+LATEST=$(ls -d "$RUN"/step_* 2>/dev/null | sort -t_ -k2 -n | tail -1 || true)
+STEP=0; [ -n "$LATEST" ] && STEP=$((10#$(basename "$LATEST" | tr -dc 0-9)))
+if [ "$STEP" -ge "$NSTEPS" ]; then echo "done: step $STEP >= $NSTEPS"; exit 0; fi
+if [ "${PREV_STEP:-0}" -gt 0 ] && [ "$STEP" -le "$PREV_STEP" ]; then
+  echo "no checkpoint progress since step $PREV_STEP; halting chain"; exit 1; fi
+# queue the next slot to continue after this one ends (self-terminates via guards above)
+sbatch --dependency=afterany:"$SLURM_JOB_ID" --export=ALL,PREV_STEP="$STEP" \
+       "$REPO/scripts/train/train_stage3_llava_4gpu.sbatch" "$CONFIG" "$@" >/dev/null
+# Warm start (init_from in config) applies only on the cold start; on every later
+# slot --resume-from is passed, which train.py prefers over init_from.
+RESUME=(); [ -n "$LATEST" ] && RESUME=(--resume-from "$LATEST")
+
+NGPU="${SLURM_GPUS_ON_NODE:-$(nvidia-smi -L | wc -l)}"
+echo "launching: config=$CONFIG ngpu=$NGPU resume=${LATEST:-none} step=$STEP/$NSTEPS"
+torchrun --standalone --nproc_per_node="$NGPU" "$REPO/train.py" --config "$CONFIG" "${RESUME[@]}" "$@"

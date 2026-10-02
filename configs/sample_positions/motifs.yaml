@@ -1,0 +1,5 @@
+motifs: true
+per_game: 10
+rare_keep_probability: 0.5
+max_positions: 350000
+seed: 1

@@ -1,0 +1,4 @@
+# A check that occurs <= near_plies before a game-ending checkmate (not the mate).
+features: [in_check, near_mate]
+near_plies: 6
+per_game: 1        # one random qualifying check per game

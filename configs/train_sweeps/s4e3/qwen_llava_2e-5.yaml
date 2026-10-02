@@ -1,0 +1,65 @@
+# Stage-4 (stage4_exp3) — qwen llava, low-LR constant sweep (lr=2e-5).
+#
+# Rationale: s4e2 LLaVA runs plateaued at ~0.4-0.57 overall; collaborator's LLaVA
+# recipe (1e-5 constant, 150k steps) reaches ~0.93. Hypothesis: with the decoder
+# unfrozen at high LR the projector cannot keep up. Recipe deltas from s4e2:
+# constant schedule, ~5x lower LR, 2x steps (100k vs 50k).
+
+# =============================================================================
+# SWEEP PARAMS
+# =============================================================================
+arch: llava
+lora_rank: 0
+lr: 2.0e-5              # bridge LR (constant after warmup)
+decoder_lr: 1.0e-6      # fixed decoder LR
+embed_lr: ~             # default: lr * 0.1 auto-scale
+scheduler: constant
+n_steps: 100000
+exp_name: stage4_qwen_llava_2e-5
+
+# --- fp32 master weights ---
+# At lr 2e-5 the ~2e-6 Adam update is at the edge of bf16 quantization; keep
+# trainable params in fp32 to avoid rounding away updates (autocast handles compute).
+fp32_master_weights: false
+
+# --- warm start ---
+# Overlay trainable params from the Stage-3 winner's trainable.pt (strict=False),
+# then train from step 0 with a FRESH optimizer/scheduler/data order (NOT resume).
+init_from: /scratch/gpfs/DANQIC/jeff/p-chess-lm/runs/stage3_exp2/stage3_qwen_llava_5e-5/step_0010000
+
+# =============================================================================
+# FIXED PARAMS
+# =============================================================================
+# --- model ---
+dtype: bfloat16
+compile: true
+compile_mode: default
+use_liger_loss: false
+reshard_after_forward: true   # 4B full-FT OOMs at false on A100-80; reshard frees ~2x param mem/rank
+decoder_path: /scratch/gpfs/DANQIC/jeff/models/qwen3-4b
+encoder_path: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/engines/lc0_hf_bt5
+embed_init: semantic
+
+# --- data ---
+# train_with_mix.arrow = 80% Stage-4 train_all + 8% Stage-3 + 6% Stage-2 + 6% Stage-1 replay.
+train_dataset: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/stage4/train_with_mix.arrow
+eval_dataset:  /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/stage4/val_dataset.arrow
+num_workers: 4
+
+# --- training (global batch 256 on 2 GPUs: 8 * 16 * 2) ---
+batch_size: 8
+grad_accum_steps: 16
+max_seq_len: 512
+weight_decay: 0.1
+warmup_ratio: 0.05
+max_grad_norm: 1.0
+
+# --- eval / checkpoint ---
+eval_freq: 2000
+eval_batch_size: 8
+eval_max_new_tokens: 384
+eval_max_examples: 600   # full Stage-4 val set (100/task * 6)
+log_samples: 4
+
+# --- output ---
+output_dir: /scratch/gpfs/DANQIC/jeff/p-chess-lm/runs/stage4_exp3

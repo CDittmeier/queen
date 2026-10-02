@@ -1,0 +1,7 @@
+# Mine the established stage-5 puzzle pool with the same thresholded motif
+# detector used for ordinary game positions. Per-job limits are supplied by the
+# Slurm launcher because the source pool consists of two full 100k shards and a
+# final 50k prefix.
+puzzles:
+  motifs: true
+seed: 1

@@ -1,0 +1,67 @@
+# GRPO continuation rewarded only for agreement with an offline greedy LC0 PV.
+# Initialize both HF and vLLM from the immutable Stage-5.sim step-50k SFT
+# snapshot, then unfreeze the decoder for this RL run.
+
+# --- reproducibility ---
+seed: 20260810
+
+# --- model ---
+arch: flamingo
+lora_rank: 0
+dtype: bfloat16
+model_path: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/runs/stage5sim_frozen_grpo_init_step_0050000
+encoder_path: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/engines/lc0_hf_bt5
+embed_init: semantic
+activation_checkpointing: true
+num_gpus: 4
+
+# FSDP shards the full-FT policy, gradients, and Adam state across four ranks.
+# Gradient microbatching bounds the activation footprint without changing the
+# 16-position global batch or the eight-rollout GRPO groups.
+vllm_gpu_memory_utilization: 0.22
+vllm_max_num_seqs: 128
+
+# --- data ---
+train_dataset: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/rl/stage5sim_grpo_positions_12k_lc0pv.arrow
+eval_dataset: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/rl/stage5sim_val_lc0pv.arrow
+num_workers: 2
+
+# --- GRPO training ---
+batch_size: 16
+gradient_microbatch_size: 8
+group_size: 8
+max_rollout_length: 4096
+max_seq_len: 4352
+n_steps: 500
+reward_function: match_reward
+temperature: 1.0
+top_k: -1
+top_p: 1.0
+repetition_penalty: 1.0
+clip_epsilon: 0.2
+advantage_epsilon: 1.0e-4
+
+# --- optimizer / scheduler ---
+lr: 1.0e-6
+# Full decoder fine-tuning uses one tenth of the cross-attention learning rate.
+decoder_lr: 1.0e-7
+embed_lr: 1.0e-7
+weight_decay: 0.1
+scheduler: constant
+warmup_ratio: 0.10
+min_lr_rate: 0.0
+max_grad_norm: 1.0
+fused_optimizer: true
+
+# --- reward validation ---
+eval_at_start: true
+eval_freq: 25
+eval_batch_size: 64
+eval_max_examples: 64
+log_samples: 8
+
+# --- checkpointing / output ---
+# Full-FT checkpoints contain decoder and Adam state, so save sparsely.
+save_freq: 100
+exp_name: stage5sim_frozen_grpo_lc0prefix
+output_dir: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/runs

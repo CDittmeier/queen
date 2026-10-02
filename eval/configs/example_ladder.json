@@ -1,0 +1,12 @@
+{
+  "anchors": {"random_legal": 0},
+  "pairings": "chain",
+  "engines": [
+    {"name": "random_legal", "kind": "random", "seed": 12345},
+    {"name": "stockfish_n1", "kind": "stockfish", "nodes": 1},
+    {"name": "stockfish_n10", "kind": "stockfish", "nodes": 10},
+    {"name": "stockfish_n100", "kind": "stockfish", "nodes": 100},
+    {"name": "stockfish_n1000", "kind": "stockfish", "nodes": 1000},
+    {"name": "stockfish_n10000", "kind": "stockfish", "nodes": 10000}
+  ]
+}

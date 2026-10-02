@@ -1,0 +1,49 @@
+# Stage-3 forward-task datagen — "After the moves <seq>, <stage-1 question>".
+#
+#   sbatch scripts/datagen/datagen_stage3.sbatch    # (build only; positions come
+#                                                     from sample_forward.sbatch)
+#
+# Same task families and per-task record counts as stage 1 (1,828,572 each), but
+# every record is answered on the board reached after a 1-8 ply move sequence.
+# `lookahead: true` makes build_qa_dataset read the 5-field forward records
+# (data/lichess/forward/, produced by configs/sample_positions/forward.yaml) and
+# route each task through its `sample_n_forward`. Two tasks carry a 50/50
+# changed/unchanged distinctness balancer internally (piece_on_square,
+# square_of_piece); the rest are already well-mixed (~40-55% changed).
+#
+# Game-level split mirrors stage 1: train = forward train shards (2018-10),
+# val/test = the forward val_test shard (2017-06), deduped by the builder.
+#
+# NOTE: mode-A (num_positions) eval splits are unsupported under lookahead (they
+# run every task on shared positions via sample_all, which has no forward form),
+# so there is no test_modeA here — val/test use per_task like stage 1.
+
+seed: 0
+pov: true
+lookahead: true
+output_path: data/stage3
+
+tasks:
+  piece_on_square:    {num_positions: 457143,  num_questions: 4}   # 457143*4 = 1,828,572
+  square_of_piece:    {num_positions: 914286,  num_questions: 2}   # 914286*2 = 1,828,572
+  piece_on_file:      {num_positions: 914286,  num_questions: 2}
+  piece_on_rank:      {num_positions: 914286,  num_questions: 2}
+  piece_on_diagonal:  {num_positions: 609524,  num_questions: 3}   # 609524*3 = 1,828,572
+  piece_count:        {num_positions: 1828572, num_questions: 1}
+  material_count:     {num_positions: 1828572, num_questions: 1}
+
+splits:
+  train:
+    shards: ["data/lichess/forward/train-*.jsonl"]
+
+  # Single held-out forward val_test shard feeds both; builder runs test first
+  # (joins `seen`), then val (skips `seen`), so the two eval sets are disjoint.
+  val:
+    shards: ["data/lichess/forward/val_test-*.jsonl"]
+    per_task: 100
+    num_questions: 1
+
+  test:
+    shards: ["data/lichess/forward/val_test-*.jsonl"]
+    per_task: 1000
+    num_questions: 1

@@ -1,0 +1,69 @@
+# 040 (ALL prose changes reintroduced) on the fp32 path — step (a) of the post-f417aa9 replan.
+# The full new prose: position labels, "X is superior to Y" superiority statements, the
+# critical-line recap, the suboptimal verdict, anti-blunder splicing, de-skew, win%/supersession
+# refutation and the SF judge — i.e. nothing ablated. The only thing that changed vs the old
+# 0.825 run is fp32_master_weights (f417aa9 reverted), which alone took lab data 0.848 -> 0.990.
+# If this reaches ~0.99, every prose change is vindicated and the ablation rungs are moot.
+#
+# Data note: the old config pointed at data/stage5_040 (renamed away). The full-prose 040 data
+# now lives at data/stage5/0-0-40 (1.12M rows; labels/superiority/recap all present).
+# Matched to lab where it affects the step-2000 comparison: init 144k, n_steps 20000 (so
+# warmup_ratio 0.05 ends warmup at step 1000 like lab), batch 2 x accum 16 = 256 global (also
+# keeps the restored fp32 param copy in memory). max_seq_len stays 8192 = our setting, no truncation.
+#   CHAIN_REMAINING=1 sbatch scripts/train/train_stage5_llava.sbatch \
+#          configs/train/stage5/llava_stage5_040_fp32.yaml
+
+# --- model ---
+arch: llava
+lora_rank: 0
+dtype: bfloat16
+compile: true
+compile_mode: default
+use_liger_loss: false   # chunked CE path, works under torch.compile
+reshard_after_forward: true
+activation_checkpointing: true
+activation_checkpointing_every_n: 2
+sync_each_batch: false
+attn_implementation: sdpa
+decoder_path: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/local/SmolLM3-3B
+encoder_path: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/engines/lc0_hf_bt5
+embed_init: semantic
+
+# --- the fix ---
+fp32_master_weights: true
+fsdp_mixed_precision: true
+fsdp_reduce_dtype: float32
+fused_optimizer: true
+
+# --- warm start ---  (stage-4 step_0144000 — lab's warm-start step)
+init_from: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/runs/stage4_llava_unfrozen_const/step_0144000
+
+# --- data ---  (full-prose 040 tree data; nothing ablated)
+train_dataset: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/stage5/0-0-40/train_all.arrow
+eval_dataset:  /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/stage5/0-0-40/val_dataset.arrow
+num_workers: 4
+length_grouping: true
+length_group_pool_size: 512
+
+# --- training ---  (2 * 16 * 8 GPUs = 256 global)
+batch_size: 2
+grad_accum_steps: 16
+max_seq_len: 8192
+n_steps: 20000
+lr: 1.0e-5
+weight_decay: 0.1
+scheduler: constant
+warmup_ratio: 0.05
+max_grad_norm: 1.0
+
+# --- eval / checkpoint ---
+save_freq: 400
+eval_freq: 400
+eval_loss_only: true
+eval_batch_size: 1
+eval_max_examples: 200
+log_samples: 4
+
+# --- output ---
+exp_name: stage5_llava_040_fp32
+output_dir: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/runs

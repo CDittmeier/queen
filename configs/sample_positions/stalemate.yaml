@@ -1,0 +1,3 @@
+# Stalemate positions (the game-ending stalemate).
+features: [is_stalemate]
+per_game: 1        # at most one per game

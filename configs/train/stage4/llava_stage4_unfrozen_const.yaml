@@ -1,0 +1,64 @@
+# Stage-4 training — LLaVA arch, decoder UNFROZEN, warmup-then-CONSTANT LR.
+# Warm-starts from the stage-3 checkpoint (unfrozen + constant LR, step 30k),
+# then trains on the stage-4 forward-dynamic tasks with stage-3/2/1 data mixed
+# back in (80% stage-4 / 8% stage-3 / 6% stage-2 / 6% stage-1).
+#
+#   sbatch scripts/train/train_stage4_llava.sbatch \
+#          configs/train/stage4/llava_stage4_unfrozen_const.yaml
+#
+# Trains: connector + file/rank embeds + new_embed + the full SmolLM3 decoder.
+# Encoder (lc0 BT5) is always frozen. Identical recipe to stage-1/2/3
+# (llava_unfrozen_const) — the only deltas are the data and the warm start.
+
+# --- model ---
+arch: llava
+lora_rank: 0
+dtype: bfloat16
+compile: true
+compile_mode: default
+use_liger_loss: false        # chunked CE path, works under torch.compile
+reshard_after_forward: false
+decoder_path: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/local/SmolLM3-3B
+encoder_path: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/engines/lc0_hf_bt5
+embed_init: semantic
+
+# --- warm start ---
+# Initialize trainable params from the stage-3 checkpoint's portable trainable.pt
+# (load_state_dict strict=False), then train from step 0 with a FRESH optimizer,
+# scheduler, and data order. NOT --resume-from (which would restore the stage-3
+# optimizer + step count). train.py honors `init_from` (weights only), distinct
+# from resume.
+init_from: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/runs/stage3_llava_unfrozen_const/step_0030000
+
+# --- data ---
+# train_with_mix.arrow = stage-4 train_all (80%, six forward-dynamic tasks)
+# concatenated with an 8% sample of stage-3, a 6% sample of stage-2, and a 6%
+# sample of stage-1 train mixtures (each internally balanced across its tasks).
+# Built by scripts/datagen/build_stage4_mix.sbatch via datagen/mix_arrows.py
+# (--dist 80 8 6 6). The DataLoader shuffles globally each epoch.
+train_dataset: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/stage4/train_with_mix.arrow
+eval_dataset:  /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/stage4/val_dataset.arrow
+num_workers: 4
+
+# --- training ---
+batch_size: 8           # per-device micro-batch
+grad_accum_steps: 4     # 8 * 4 * 8 GPUs = 256 global (same recipe, 8-GPU launch)
+max_seq_len: 512        # matches stage-1/2/3
+n_steps: 50000          # extended from 30k — still improving at 30k (constant LR,
+                        # so the resume just continues at flat 1e-5 past warmup)
+lr: 1.0e-5
+weight_decay: 0.1
+scheduler: constant     # warmup then flat LR (every checkpoint a valid "final")
+warmup_ratio: 0.05
+max_grad_norm: 1.0
+
+# --- eval / checkpoint ---
+eval_freq: 2000         # also the checkpoint cadence (enables --resume-from)
+eval_batch_size: 8
+eval_max_new_tokens: 384  # matches stage-1/2/3
+eval_max_examples: 600    # full stage-4 val set (100/task * 6)
+log_samples: 4
+
+# --- output ---
+exp_name: stage4_llava_unfrozen_const
+output_dir: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/runs

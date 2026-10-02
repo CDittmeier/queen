@@ -1,0 +1,3 @@
+# Random positions — no feature gate.
+features: []
+per_game: 5        # required positions per game (sampled from all plies >= START_PLY)

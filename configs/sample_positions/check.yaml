@@ -1,0 +1,3 @@
+# Positions where the side to move is in check.
+features: [in_check]
+per_game: 4        # tune: in-check plies are several per game

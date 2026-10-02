@@ -1,0 +1,5 @@
+# Positions where the side to move has at least one legal checking move available
+# (i.e. checking_moves would have a non-empty answer). Mixed with the generic pool
+# at ~4:1 to lift the share of with-check positions for the checking_moves task.
+features: [has_check]
+per_game: 4        # ~45% of plies qualify, so several are available per game

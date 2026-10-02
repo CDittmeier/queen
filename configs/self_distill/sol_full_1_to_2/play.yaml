@@ -1,0 +1,29 @@
+# GPU play: see README.md for the command and shard-ownership convention.
+seed: 20260828
+output: data/self_distill/sol_full_2/positions/play_000.games.jsonl
+play:
+  model: runs/self_distill/sol_full_1/merged
+  encoder: data/engines/lc0_hf_bt5
+  stockfish: data/engines/stockfish_25080907_x64_avx2
+  job: sol_full_2_play_000
+  scratch_dir: data/scratch/self_distill
+  game_start: 0
+  concurrent_games: 128
+  opponent_nodes_min: 100
+  opponent_nodes_max: 100000
+  stockfish_workers: 6
+  max_plies: 200
+  max_output_tokens: 4096
+  temperature: 0.6
+  top_k: 20
+  top_p: 0.95
+  gpu_memory_utilization: 0.78
+  max_num_seqs: 128
+  use_v1_vllm: false
+score:
+  stockfish: data/engines/stockfish_25080907_x64_avx2
+  oracle_nodes: 100000
+  stockfish_workers: 6
+  # All >=5pp mistakes; ceil(played plies / 10) random ordinary positions/game.
+  force_keep_winrate_drop: 0.05
+  high_eval_downsample: 4
