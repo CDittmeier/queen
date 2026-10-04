@@ -1,3 +1,5 @@
+Download our trained models on [Huggingface](https://huggingface.co/collections/princeton-nlp/queen-chess-models)
+
 ```
 ├── models/            # Contains code for specific ChessLM architectures (LoRA + FSDP2 compatabible)
 │   ├── base.py            # Base protocol that fits into training and inference code
