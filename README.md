@@ -1,7 +1,8 @@
 # QUEEN
 
 Extended README and clean code release coming soon! More detailed documentation
-will be released after we finish cleaning the code.
+will be released after we finish cleaning the code. You can download our models
+[here](https://huggingface.co/collections/princeton-nlp/queen-chess-models).
 
 ## Setup
 
