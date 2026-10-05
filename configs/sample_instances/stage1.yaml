@@ -1,6 +1,6 @@
 # Stage-1 curriculum datagen — real run (derived from configs/sample_datagen.yaml).
 #
-#   sbatch scripts/datagen_stage1.sbatch        # samples shards, builds, concatenates
+#   sbatch scripts/datagen/common/build_instances.sbatch --config configs/sample_instances/stage1.yaml
 #
 # Target: equal examples per task, 50,000 steps' worth of unique batches of 256
 #   => 50000 * 256 = 12,800,000 train records, /7 tasks = 1,828,572 each.

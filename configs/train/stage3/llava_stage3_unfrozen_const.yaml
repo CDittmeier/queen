@@ -3,8 +3,7 @@
 # then trains on the stage-3 forward tasks with stage-2 and stage-1 data mixed
 # back in (86% stage-3 / 8% stage-2 / 6% stage-1).
 #
-#   sbatch scripts/train/train_stage3_llava.sbatch \
-#          configs/train/stage3/llava_stage3_unfrozen_const.yaml
+# Launch: sbatch scripts/train/common/train_sft.sbatch configs/train/stage3/llava_stage3_unfrozen_const.yaml
 #
 # Trains: connector + file/rank embeds + new_embed + the full SmolLM3 decoder.
 # Encoder (lc0 BT5) is always frozen. Mirrors the stage-1/stage-2 recipe
@@ -18,8 +17,8 @@ compile: true
 compile_mode: default
 use_liger_loss: false        # chunked CE path, works under torch.compile
 reshard_after_forward: false
-decoder_path: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/local/SmolLM3-3B
-encoder_path: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/engines/lc0_hf_bt5
+decoder_path: local/SmolLM3-3B
+encoder_path: data/engines/lc0_hf_bt5
 embed_init: semantic
 
 # --- warm start ---
@@ -28,16 +27,16 @@ embed_init: semantic
 # scheduler, and data order. NOT --resume-from (which would restore the stage-2
 # optimizer + step count). train.py honors `init_from` (weights only), distinct
 # from resume.
-init_from: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/runs/stage2_llava_unfrozen_const/step_0030000
+init_from: runs/stage2_llava_unfrozen_const/step_0030000
 
 # --- data ---
 # train_with_mix.arrow = stage-3 train_all (86%, seven forward tasks uniform 1/7)
 # concatenated with an 8% uniform sample of the stage-2 train mixture and a 6%
 # uniform sample of the stage-1 train mixture (each internally balanced across
-# its task types). Built by scripts/datagen/build_stage3_mix.sbatch via
+# its task types). Built by scripts/datagen/common/mix_datasets.sbatch via
 # datagen/mix_arrows.py (--dist 86 8 6). The DataLoader shuffles globally each epoch.
-train_dataset: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/stage3/train_with_mix.arrow
-eval_dataset:  /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/stage3/val_dataset.arrow
+train_dataset: data/stage3/train_with_mix.arrow
+eval_dataset:  data/stage3/val_dataset.arrow
 num_workers: 4
 
 # --- training ---
@@ -60,4 +59,4 @@ log_samples: 4
 
 # --- output ---
 exp_name: stage3_llava_unfrozen_const
-output_dir: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/runs
+output_dir: runs

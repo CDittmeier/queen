@@ -2,7 +2,7 @@
 # on the board reached after a 1-8 ply move sequence ("After the moves <seq>,
 # <stage-2 question>").
 #
-#   sbatch scripts/datagen/datagen_stage4.sbatch    # (build only; positions come
+#   sbatch scripts/datagen/common/build_instances.sbatch --config configs/sample_instances/stage4.yaml
 #                                                     from sample_forward.sbatch +
 #                                                     sample_forward_special.sbatch)
 #

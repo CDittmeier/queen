@@ -1,0 +1,59 @@
+# Direct-analyzer SFT with all structured moves in compact POV notation.
+# Full decoder fine-tuning from stage 4, per the production experiment definition.
+
+# --- model ---
+arch: flamingo
+lora_rank: 0
+dtype: bfloat16
+compile: true
+compile_mode: default
+use_liger_loss: false
+reshard_after_forward: true
+activation_checkpointing: true
+activation_checkpointing_every_n: 2
+sync_each_batch: false
+attn_implementation: sdpa
+decoder_path: local/SmolLM3-3B
+encoder_path: data/engines/lc0_hf_bt5
+embed_init: semantic
+
+# --- precision / optimizer implementation ---
+fp32_master_weights: true
+fsdp_mixed_precision: true
+fsdp_reduce_dtype: float32
+fused_optimizer: true
+
+# --- initialization ---
+init_from: runs/stage4_exp1/stage4_smollm_flamingo_2e-4/step_0048000
+
+# --- data ---
+train_dataset: data/sol_distill/train.arrow
+eval_dataset: data/sol_distill/validation.arrow
+num_workers: 4
+length_grouping: true
+length_group_pool_size: 256
+
+# --- training (4 examples/GPU * 1 accumulation * 4 GPUs = 16 global) ---
+# 4,000 * 16 = 64,000 examples, or 7.617 passes over 8,402 rows.
+batch_size: 4
+grad_accum_steps: 1
+max_seq_len: 2048
+n_steps: 4000
+lr: 1.0e-5
+weight_decay: 0.1
+scheduler: constant
+warmup_ratio: 0.05
+max_grad_norm: 1.0
+
+# --- validation / checkpoint selection ---
+save_freq: 100
+eval_freq: 100
+eval_loss_only: true
+eval_batch_size: 4
+eval_max_examples: 200
+log_samples: 0
+eval_at_start: true
+
+# --- output ---
+exp_name: sol_distill
+output_dir: runs

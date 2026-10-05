@@ -1,0 +1,103 @@
+# Fixed internal ladder ratings (not an additional Lichess offset).
+{
+  "encoder": "data/engines/lc0_hf_bt5",
+  "stockfish": "data/engines/stockfish_25080907_x64_avx2",
+  "lc0": "data/engines/lc0/build/release/lc0",
+  "targets": [
+    {
+      "name": "self-distill-iteration",
+      "model": "runs/self_distill/iteration/merged"
+    }
+  ],
+  "opponents": [
+    {
+      "name": "stockfish_n10",
+      "kind": "stockfish",
+      "nodes": 10,
+      "threads": 1,
+      "hash_mb": 64,
+      "elo": 1313.8053715072067
+    },
+    {
+      "name": "maia-2200",
+      "kind": "lc0",
+      "nodes": 1,
+      "weights": "data/engines/lc0_networks/maia-2200.pb.gz",
+      "elo": 1373.0
+    },
+    {
+      "name": "stockfish_n100",
+      "kind": "stockfish",
+      "nodes": 100,
+      "threads": 1,
+      "hash_mb": 64,
+      "elo": 1421.3434964242388
+    },
+    {
+      "name": "tinygyal-8",
+      "kind": "lc0",
+      "nodes": 10000,
+      "weights": "data/engines/lc0_networks/tinygyal-8.pb.gz",
+      "elo": 1758.0
+    },
+    {
+      "name": "stockfish_n1000",
+      "kind": "stockfish",
+      "nodes": 1000,
+      "threads": 1,
+      "hash_mb": 64,
+      "elo": 1932.8449368053703
+    },
+    {
+      "name": "11258-16x2-se-4",
+      "kind": "lc0",
+      "nodes": 10000,
+      "weights": "data/engines/lc0_networks/11258-16x2-se-4.pb.gz",
+      "elo": 2025.0
+    },
+    {
+      "name": "stockfish_n3000",
+      "kind": "stockfish",
+      "nodes": 3000,
+      "threads": 1,
+      "hash_mb": 64,
+      "elo": 2173.6689333365553
+    },
+    {
+      "name": "11258-24x3-se",
+      "kind": "lc0",
+      "nodes": 10000,
+      "weights": "data/engines/lc0_networks/11258-24x3-se.pb.gz",
+      "elo": 2201.0
+    }
+  ],
+  "openings": [
+    {
+      "name": "italian_setup",
+      "moves_san": [
+        "e4",
+        "e5",
+        "Nf3",
+        "Nc6"
+      ]
+    },
+    {
+      "name": "qgd_setup",
+      "moves_san": [
+        "d4",
+        "d5",
+        "c4",
+        "e6"
+      ]
+    }
+  ],
+  "prompt": "Analyze the given chess position, identify the best move, give the critical line assuming best play, list promising moves for deeper investigation, and evaluate the position.",
+  "max_plies": 400,
+  "max_output_tokens": 2048,
+  "temperature": 0.6,
+  "top_k": 20,
+  "top_p": 0.95,
+  "seed": 20260823,
+  "gpu_memory_utilization": 0.72,
+  "max_num_seqs": 32
+}

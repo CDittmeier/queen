@@ -20,7 +20,7 @@ exp_name: stage4_gemma_llava_2e-4
 # --- warm start ---
 # Overlay trainable params from the Stage-3 winner's trainable.pt (strict=False),
 # then train from step 0 with a FRESH optimizer/scheduler/data order (NOT resume).
-init_from: /scratch/gpfs/DANQIC/jeff/p-chess-lm/runs/stage3_exp2/stage3_gemma_llava_1e-4/step_0012000
+init_from: runs/stage3_exp2/stage3_gemma_llava_1e-4/step_0012000
 
 # =============================================================================
 # FIXED PARAMS
@@ -30,14 +30,14 @@ dtype: bfloat16
 compile: true
 compile_mode: default
 reshard_after_forward: true   # 4B full-FT OOMs at false on A100-80; reshard frees ~2x param mem/rank
-decoder_path: /scratch/gpfs/DANQIC/jeff/models/gemma3-4b
-encoder_path: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/engines/lc0_hf_bt5
+decoder_path: local/gemma3-4b
+encoder_path: data/engines/lc0_hf_bt5
 embed_init: semantic
 
 # --- data ---
 # train_with_mix.arrow = 80% Stage-4 train_all + 8% Stage-3 + 6% Stage-2 + 6% Stage-1 replay.
-train_dataset: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/stage4/train_with_mix.arrow
-eval_dataset:  /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/stage4/val_dataset.arrow
+train_dataset: data/stage4/train_with_mix.arrow
+eval_dataset:  data/stage4/val_dataset.arrow
 num_workers: 4
 
 # --- training (global batch 256 on 2 GPUs: 8 * 16 * 2) ---
@@ -56,4 +56,4 @@ eval_max_examples: 600   # full Stage-4 val set (100/task * 6)
 log_samples: 4
 
 # --- output ---
-output_dir: /scratch/gpfs/DANQIC/jeff/p-chess-lm/runs/stage4_exp2
+output_dir: runs/stage4_exp2

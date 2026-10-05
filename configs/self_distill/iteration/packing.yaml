@@ -1,0 +1,11 @@
+# Same filtering/evaluation rewrite used by the final Sol/Hero packing recipe.
+consolidated_roots:
+  - data/self_distill/iteration/consolidated
+output: data/self_distill/iteration/training
+task_name: recursive_distillation
+seed: 20260828
+validation_size: 100
+# Set to the previous iteration's validation.arrow to reuse its holdout.
+validation_arrow: null
+# Absolute win-rate error in [0,1], measured BEFORE rewriting. Reject >=7.5pp.
+max_eval_error_exclusive: 0.075

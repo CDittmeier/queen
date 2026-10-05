@@ -21,13 +21,13 @@ compile: true
 compile_mode: default
 use_liger_loss: false        # chunked CE path, works under torch.compile
 reshard_after_forward: false
-decoder_path: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/local/SmolLM3-3B
-encoder_path: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/engines/lc0_hf_bt5
+decoder_path: local/SmolLM3-3B
+encoder_path: data/engines/lc0_hf_bt5
 embed_init: semantic
 
 # --- data ---  (train_with_mix = 80% stage-4 + 8/6/6% stage-3/2/1 replay; pov: true)
-train_dataset: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/stage4/train_with_mix.arrow
-eval_dataset:  /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/stage4/val_dataset.arrow
+train_dataset: data/stage4/train_with_mix.arrow
+eval_dataset:  data/stage4/val_dataset.arrow
 num_workers: 4
 
 # --- training (global batch 256 on 2 GPUs: 8 * 16 * 2) ---
@@ -52,4 +52,4 @@ log_samples: 4
 
 # --- output ---
 exp_name: stage4_smollm_flamingo_2e-4
-output_dir: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/runs
+output_dir: runs

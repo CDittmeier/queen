@@ -1,6 +1,6 @@
 # Stage-2 dynamic-task datagen — real run.
 #
-#   sbatch scripts/datagen_stage2.sbatch        # builds + concatenates
+#   sbatch scripts/datagen/common/build_instances.sbatch --config configs/sample_instances/stage2.yaml
 #
 # Built by datagen/build_qa_dataset.py (unified builder). Per-task position
 # sourcing uses the `mix:` interleave: each source is a jsonl glob or the literal
@@ -67,15 +67,15 @@ tasks:
 
 splits:
   train:
-    shards: ["data/lichess/generic/train-*.jsonl"]
+    shards: ["data/lichess/train-*.jsonl"]
 
   val:
-    shards: ["data/lichess/generic/val_test-*.jsonl"]
+    shards: ["data/lichess/val_test-*.jsonl"]
     per_task: 100
     num_questions: 1
 
   test:
-    shards: ["data/lichess/generic/val_test-*.jsonl"]
+    shards: ["data/lichess/val_test-*.jsonl"]
     per_task: 1000
     num_questions: 1
 

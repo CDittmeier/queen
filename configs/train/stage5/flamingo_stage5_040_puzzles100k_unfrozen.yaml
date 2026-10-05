@@ -14,8 +14,8 @@ activation_checkpointing: true
 activation_checkpointing_every_n: 2
 sync_each_batch: false
 attn_implementation: sdpa
-decoder_path: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/local/SmolLM3-3B
-encoder_path: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/engines/lc0_hf_bt5
+decoder_path: local/SmolLM3-3B
+encoder_path: data/engines/lc0_hf_bt5
 embed_init: semantic
 
 fp32_master_weights: true
@@ -23,11 +23,11 @@ fsdp_mixed_precision: true
 fsdp_reduce_dtype: float32
 fused_optimizer: true
 
-init_from: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/runs/stage4_smollm_flamingo_2e-4/step_0048000
+init_from: runs/stage4_exp1/stage4_smollm_flamingo_2e-4/step_0048000
 
 # --- data ---
-train_dataset: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/stage5/0-0-40-puzzles100k/train_all.arrow
-eval_dataset: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/stage5/0-0-40/val_dataset.arrow
+train_dataset: data/stage5/0-0-40-puzzles100k/train_all.arrow
+eval_dataset: data/stage5/0-0-40/val_dataset.arrow
 num_workers: 4
 length_grouping: true
 length_group_pool_size: 512
@@ -53,4 +53,4 @@ log_samples: 4
 
 # --- output ---
 exp_name: stage5_flamingo_040_puzzles100k_unfrozen
-output_dir: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/runs
+output_dir: runs

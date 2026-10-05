@@ -71,3 +71,12 @@ Defaults resolve through repo-local symlinks (override with `$STOCKFISH_BIN` /
 Subclass `Player`, implement `choose_move(board) -> chess.Move` (and optionally
 `new_game` / `close`), then add a `kind` branch to `build_player`. The match and
 rating code are engine-agnostic and need no changes.
+## Analysis-model evaluation
+
+For the paper's model benchmarks use `python -m eval.benchmark --config
+configs/eval/benchmark.yaml` (one command line). For the fixed 32-game LM Elo
+test use `python -m eval.model_ladder --config configs/eval/model_ladder.yaml`.
+The repository README documents input formats, exact metrics, opponents,
+checkpoint exports, Slurm launchers, and resume behavior. The UCI-only tools
+above remain for engine calibration; the batched LM runner does not require
+modifying their per-move interface.

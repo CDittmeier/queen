@@ -1,6 +1,6 @@
 # Stage-5 machine-readable HCE-rationale datagen.
 #
-#   sbatch scripts/datagen/datagen_stage5.sbatch
+#   sbatch scripts/datagen/hce/build_hce.sbatch
 #
 # For each sampled position, run the search + verbalization pipeline
 # (datagen/tree/get_tree) and store its TOKEN narrative as the response — a
@@ -21,7 +21,7 @@ tasks:
   hce_rationale: {num_positions: 200000, num_questions: 1}
 
 # Positions come from the stage-5 allocation only (rated_2018-10 train_ shards
-# [00050-00074], sampled by scripts/datagen/sample_stage5.sbatch) — disjoint from the
+# [00050-00074], sampled by scripts/datagen/common/sample_positions.sbatch) — disjoint from the
 # stage-1/2 jsonls. All three splits draw from the same train shards; the builder runs
 # test -> val -> train, threading a shared seen-FEN set, so they are position-disjoint.
 splits:

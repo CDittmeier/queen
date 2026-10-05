@@ -1,0 +1,25 @@
+# Use the selected checkpoint's vLLM export, not the FSDP checkpoint directory.
+model: runs/self_distill/iteration/merged
+label: self-distill iteration
+encoder: data/engines/lc0_hf_bt5
+stockfish: data/engines/stockfish_25080907_x64_avx2
+sf_nodes: 10000
+sf_workers: 2
+mistake_wr_drop: 10.0  # percentage points; >=10 is a mistake
+prompt_mode: sample  # preserve the benchmark's neutral prompt; training is also supported
+generation:
+  temperature: 0.6
+  top_k: 20
+  top_p: 0.95
+  max_tokens: 8192
+  seed: 0
+  chunk_size: 256
+  max_num_seqs: 128
+  gpu_memory_utilization: 0.85
+datasets:
+  - name: tactical
+    source: data/benchmarks/tactical
+    output: runs/self_distill/iteration/eval/tactical
+  - name: general
+    source: data/benchmarks/general
+    output: runs/self_distill/iteration/eval/general

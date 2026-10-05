@@ -24,13 +24,13 @@ dtype: bfloat16
 compile: true
 compile_mode: default
 reshard_after_forward: true   # Qwen3-4B full-FT (Gemma-class) OOMs at false on A100-80; reshard frees ~2x param mem/rank
-decoder_path: /scratch/gpfs/DANQIC/jeff/models/qwen3-4b
-encoder_path: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/engines/lc0_hf_bt5
+decoder_path: local/qwen3-4b
+encoder_path: data/engines/lc0_hf_bt5
 embed_init: semantic
 
 # --- data ---
-train_dataset: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/stage1/train_all.arrow
-eval_dataset:  /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/stage1/val_dataset.arrow
+train_dataset: data/stage1/train_all.arrow
+eval_dataset:  data/stage1/val_dataset.arrow
 num_workers: 4
 
 # --- training (global batch 256 on 2 GPUs: 8 * 16 * 2) ---
@@ -49,4 +49,4 @@ eval_max_examples: 700
 log_samples: 4
 
 # --- output ---
-output_dir: /scratch/gpfs/DANQIC/jeff/p-chess-lm/runs/stage1_exp5
+output_dir: runs/stage1_exp5

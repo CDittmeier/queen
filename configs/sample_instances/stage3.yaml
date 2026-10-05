@@ -1,7 +1,7 @@
 # Stage-3 forward-task datagen — "After the moves <seq>, <stage-1 question>".
 #
-#   sbatch scripts/datagen/datagen_stage3.sbatch    # (build only; positions come
-#                                                     from sample_forward.sbatch)
+#   sbatch scripts/datagen/common/build_instances.sbatch --config configs/sample_instances/stage3.yaml
+# Positions are sampled separately using configs/sample_positions/forward.yaml.
 #
 # Same task families and per-task record counts as stage 1 (1,828,572 each), but
 # every record is answered on the board reached after a 1-8 ply move sequence.

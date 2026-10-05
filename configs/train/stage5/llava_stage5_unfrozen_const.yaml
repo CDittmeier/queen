@@ -2,8 +2,7 @@
 # Same recipe as stage 4. Deltas: warm-start from the stage-4 checkpoint; 100% stage-5
 # (hce_rationale) data with NO mix-back of earlier stages and an 8192-token cap.
 #
-#   sbatch scripts/train/train_stage5_llava.sbatch \
-#          configs/train/stage5/llava_stage5_unfrozen_const.yaml
+# Launch: sbatch scripts/train/common/train_sft.sbatch configs/train/stage5/llava_stage5_unfrozen_const.yaml
 
 # --- model ---   (identical to stage 4)
 arch: llava
@@ -15,16 +14,16 @@ use_liger_loss: true    # stage-5 memory relief; graph-breaks torch.compile so k
 reshard_after_forward: true
 activation_checkpointing: true
 attn_implementation: sdpa
-decoder_path: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/local/SmolLM3-3B
-encoder_path: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/engines/lc0_hf_bt5
+decoder_path: local/SmolLM3-3B
+encoder_path: data/engines/lc0_hf_bt5
 embed_init: semantic
 
 # --- warm start ---  (stage-4 final checkpoint; weights only, fresh optimizer/scheduler/step)
-init_from: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/runs/stage4_llava_unfrozen_const/step_0150000
+init_from: runs/stage4_llava_unfrozen_const/step_0150000
 
 # --- data ---  (100% stage-5 hce_rationale — no mix-back of earlier stages)
-train_dataset: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/stage5/train_all.arrow
-eval_dataset:  /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/stage5/val_dataset.arrow
+train_dataset: data/stage5/train_all.arrow
+eval_dataset:  data/stage5/val_dataset.arrow
 num_workers: 2
 
 # --- training ---
@@ -49,4 +48,4 @@ log_samples: 4
 
 # --- output ---
 exp_name: stage5_llava_unfrozen_const
-output_dir: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/runs
+output_dir: runs

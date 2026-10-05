@@ -1,0 +1,34 @@
+# Representative round; mining settings follow the iteration-06-redo self-play wave.
+# Every directory/model path is relative to the repository root.
+stage: mine
+input_dir: data/self_distill/iteration/positions
+output_dir: data/self_distill/iteration/mined
+start_index: 0
+end_index: null  # All tasks; CLI --start-index/--end-index override these bounds.
+tasks:
+  - {input: human_000.jsonl, output: human_000}
+  - {input: puzzles_000.jsonl, output: puzzles_000}
+  - {input: play_000.scored.jsonl, output: play_000}
+parameters:
+  model: runs/self_distill/input_merged
+  encoder: data/engines/lc0_hf_bt5
+  stockfish: data/engines/stockfish_25080907_x64_avx2
+  seed: 20260828
+  sf_workers: 6
+  sf_nodes: 100000
+  max_recursions: 5
+  max_root_retries: 3
+  max_child_retries: 0
+  min_clean_ply: 1
+  work_batch_size: 1024
+  checkpoint_every: 1024
+  max_output_tokens: 4096
+  max_num_seqs: 256
+  use_v1_vllm: false
+  gpu_memory_utilization: 0.70
+  temperature: 0.6
+  top_k: 20
+  top_p: 0.95
+  inject_drop: 0.05
+  mistake_drop: 0.10
+  eval_truth_limit: 0.10

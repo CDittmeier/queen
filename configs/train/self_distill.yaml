@@ -1,0 +1,59 @@
+# General self-distillation SFT round, using the representative HCE/Sol recipe.
+# Both arms unfreeze the decoder. Set init_from to the selected parent checkpoint.
+
+# --- model ---
+arch: flamingo
+lora_rank: 0
+dtype: bfloat16
+compile: true
+compile_mode: default
+use_liger_loss: false
+reshard_after_forward: true
+activation_checkpointing: true
+activation_checkpointing_every_n: 2
+sync_each_batch: false
+attn_implementation: sdpa
+decoder_path: local/SmolLM3-3B
+encoder_path: data/engines/lc0_hf_bt5
+embed_init: semantic
+
+# --- precision / optimizer implementation ---
+fp32_master_weights: true
+fsdp_mixed_precision: true
+fsdp_reduce_dtype: float32
+fused_optimizer: true
+
+# --- warm start: unmerged selected parent checkpoint ---
+init_from: runs/sol_distill/step_0002100
+
+# --- data ---
+train_dataset: data/self_distill/iteration/training/train.arrow
+eval_dataset: data/self_distill/iteration/training/validation.arrow
+num_workers: 4
+length_grouping: true
+length_group_pool_size: 512
+
+# --- training ---
+# 4 examples/GPU * 2 accumulation steps * 4 GPUs = 32 global batch.
+batch_size: 4
+grad_accum_steps: 2
+max_seq_len: 2048
+n_steps: 10000
+lr: 1.0e-4
+weight_decay: 0.1
+scheduler: constant
+warmup_ratio: 0.05
+max_grad_norm: 1.0
+
+# --- validation / checkpointing ---
+eval_at_start: true
+eval_freq: 250
+eval_loss_only: true
+eval_batch_size: 1
+eval_max_examples: 100
+save_freq: 250
+log_samples: 0
+
+# --- output ---
+exp_name: iteration
+output_dir: runs/self_distill

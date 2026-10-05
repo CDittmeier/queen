@@ -143,15 +143,15 @@ and output basenames when splitting work among collaborators.
 ### Config-backed task lists
 
 Mining, rebalance preparation, and consolidation also accept durable task YAMLs:
-`configs/self_distill/{mine,rebalance,consolidate}.yaml` are example templates,
-not submissions. Replace their input lists and model paths for your experiment.
+`configs/self_distill/iteration/{mine,rebalance,consolidate}.yaml` define the
+representative round. See the root README and `prepare_iteration.sh` for submission.
 
 ```bash
-python -m datagen.self_distill_stages mine --config configs/self_distill/mine.yaml
-python -m datagen.self_distill_stages mine --config configs/self_distill/mine.yaml \
-    --start-index 20 --end-index 40
-python -m datagen.self_distill_stages rebalance --config configs/self_distill/rebalance.yaml
-python -m datagen.self_distill_stages consolidate --config configs/self_distill/consolidate.yaml
+python -m datagen.self_distill_stages mine --config configs/self_distill/iteration/mine.yaml
+python -m datagen.self_distill_stages mine --config configs/self_distill/iteration/mine.yaml \
+    --start-index 0 --end-index 1
+python -m datagen.self_distill_stages rebalance --config configs/self_distill/iteration/rebalance.yaml
+python -m datagen.self_distill_stages consolidate --config configs/self_distill/iteration/consolidate.yaml
 ```
 
 All relative config/model/directory paths resolve against the **repository root**,

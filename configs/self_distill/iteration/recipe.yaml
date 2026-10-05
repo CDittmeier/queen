@@ -1,0 +1,12 @@
+# One representative round. All paths are relative to the repository root.
+# To use an HCE parent, change source_checkpoint/source_train_dataset here and
+# init_from in training_config together. The sampling/consolidation logic is shared.
+human_source: data/lichess_dbs/allocated/self_distill/human_000.pgn.zst
+puzzle_source: data/lichess/puzzles/allocated/self_distill/puzzles.jsonl
+play_games: 2000
+source_checkpoint: runs/sol_distill/step_0002100
+source_train_dataset: data/sol_distill/train.arrow
+base_model: local/SmolLM3-3B
+export_model: runs/self_distill/input_merged
+training_config: configs/train/self_distill.yaml
+# Training is a separate submission after filtered/conversion-ready Arrow packing.

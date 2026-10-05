@@ -1,5 +1,5 @@
 # Qwen3-4B SMOKE TEST — LLaVA arch, decoder UNFROZEN (full fine-tune).
-#   part of: sbatch scripts/train_sweeps/qwen_smoke.sbatch
+# Launch: sbatch scripts/train/common/train_sft.sbatch configs/train_sweeps/expintro/qwen_llava_smoke.yaml
 #
 # Purpose: end-to-end validation of the Qwen3 plumbing, NOT a real recipe.
 # Exercises: adapter_for(qwen3) build, FSDP wrap on Qwen3DecoderLayer, the LLaVA
@@ -28,13 +28,13 @@ exp_name: qwen_llava_smoke
 dtype: bfloat16
 compile: true
 reshard_after_forward: true   # full-FT 4B (Gemma-class): reshard to stay under 80GB/rank
-decoder_path: /scratch/gpfs/DANQIC/jeff/models/qwen3-4b
-encoder_path: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/engines/lc0_hf_bt5
+decoder_path: local/qwen3-4b
+encoder_path: data/engines/lc0_hf_bt5
 embed_init: semantic
 
 # --- data ---
-train_dataset: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/stage1/train_all.arrow
-eval_dataset:  /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/stage1/val_dataset.arrow
+train_dataset: data/stage1/train_all.arrow
+eval_dataset:  data/stage1/val_dataset.arrow
 num_workers: 4
 
 # --- training (smoke sizing; not the real recipe) ---
@@ -53,4 +53,4 @@ eval_max_examples: 14   # 2/task * 7 tasks
 log_samples: 4
 
 # --- output ---
-output_dir: /scratch/gpfs/DANQIC/jeff/p-chess-lm/runs
+output_dir: runs

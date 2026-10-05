@@ -1,7 +1,7 @@
 # Stage-1 training — LLaVA arch, decoder FROZEN, warmup-then-CONSTANT LR.
 # Constant LR (no decay) means every checkpoint is a valid "final" model, so you
 # can early-stop at whichever step the val metric peaks without a half-decayed LR.
-#   sbatch scripts/train_stage1_llava.sbatch configs/train_stage1_llava_frozen_const.yaml
+# Launch: sbatch scripts/train/common/train_sft.sbatch configs/train/stage1/llava_frozen_const.yaml
 #
 # Trains: connector + file/rank embeds + new_embed only.
 # Frozen: the full SmolLM3 decoder AND the lc0 BT5 encoder.
@@ -17,13 +17,13 @@ compile: true           # torch.compile (mode=default); ~1.33x with reshard off 
 compile_mode: default   # reduce-overhead's cudagraphs break on this model
 use_liger_loss: false        # chunked CE path, works under torch.compile
 reshard_after_forward: false  # 3B fits unsharded on 2x80GB; halves all-gathers
-decoder_path: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/local/SmolLM3-3B
-encoder_path: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/engines/lc0_hf_bt5
+decoder_path: local/SmolLM3-3B
+encoder_path: data/engines/lc0_hf_bt5
 embed_init: semantic
 
 # --- data (POV, equal 1,828,572 records/task; concatenated to one arrow) ---
-train_dataset: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/stage1/train_all.arrow
-eval_dataset:  /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/stage1/val_dataset.arrow
+train_dataset: data/stage1/train_all.arrow
+eval_dataset:  data/stage1/val_dataset.arrow
 num_workers: 4
 
 # --- training ---
@@ -46,4 +46,4 @@ log_samples: 4
 
 # --- output ---
 exp_name: stage1_llava_frozen_const_40k
-output_dir: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/runs
+output_dir: runs

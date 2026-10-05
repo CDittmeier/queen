@@ -10,8 +10,7 @@
 # Matched to lab where it affects the step-2000 comparison: init 144k, n_steps 20000 (so
 # warmup_ratio 0.05 ends warmup at step 1000 like lab), batch 2 x accum 16 = 256 global (also
 # keeps the restored fp32 param copy in memory). max_seq_len stays 8192 = our setting, no truncation.
-#   CHAIN_REMAINING=1 sbatch scripts/train/train_stage5_llava.sbatch \
-#          configs/train/stage5/llava_stage5_040_fp32.yaml
+# Launch: sbatch scripts/train/common/train_sft.sbatch configs/train/stage5/llava_stage5_35-15-100_fp32.yaml
 
 # --- model ---
 arch: llava
@@ -25,8 +24,8 @@ activation_checkpointing: true
 activation_checkpointing_every_n: 2
 sync_each_batch: false
 attn_implementation: sdpa
-decoder_path: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/local/SmolLM3-3B
-encoder_path: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/engines/lc0_hf_bt5
+decoder_path: local/SmolLM3-3B
+encoder_path: data/engines/lc0_hf_bt5
 embed_init: semantic
 
 # --- the fix ---
@@ -36,11 +35,11 @@ fsdp_reduce_dtype: float32
 fused_optimizer: true
 
 # --- warm start ---  (stage-4 step_0144000 — lab's warm-start step)
-init_from: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/runs/stage4_llava_unfrozen_const/step_0144000
+init_from: runs/stage4_llava_unfrozen_const/step_0144000
 
 # --- data ---  (full-prose 040 tree data; nothing ablated)
-train_dataset: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/stage5/dormant/35-15-100/train_all.arrow
-eval_dataset:  /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/data/stage5/dormant/35-15-100/val_dataset.arrow
+train_dataset: data/stage5/dormant/35-15-100/train_all.arrow
+eval_dataset:  data/stage5/dormant/35-15-100/val_dataset.arrow
 num_workers: 4
 length_grouping: true
 length_group_pool_size: 512
@@ -66,4 +65,4 @@ log_samples: 4
 
 # --- output ---
 exp_name: stage5_llava_35-15-100_fp32
-output_dir: /scratch/gpfs/DANQIC/ab4197/mydata/p-chess-lm/runs
+output_dir: runs

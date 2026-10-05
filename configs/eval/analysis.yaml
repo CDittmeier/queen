@@ -1,0 +1,15 @@
+# Native eval.py configuration: generates responses and applies its task graders.
+# Not the historical tactical/general critical-line scorer or LM Elo runner.
+train_config: configs/train/self_distill.yaml
+checkpoint: runs/self_distill/iteration/step_0010000
+temperature: 0.6
+max_new_tokens: 8192
+max_examples: 1000
+# Prompts are read verbatim from each Arrow dataset, not rewritten by this launcher.
+datasets:
+  - name: tactical
+    path: data/benchmarks/tactical/test.arrow
+    output: runs/self_distill/iteration/eval/tactical.json
+  - name: general
+    path: data/benchmarks/general/test.arrow
+    output: runs/self_distill/iteration/eval/general.json
