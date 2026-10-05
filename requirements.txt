@@ -1,29 +1,20 @@
-# Minimal dependencies actually imported by this repo (Python 3.10+).
-# Versions reconciled against a working RL/serving env (req1) — bumped to the
-# higher tag where doing so is safe; major-version bumps flagged inline.
-# Install:  python -m venv .venv && .venv/bin/pip install -r requirements.txt
-# (lc0_torch is vendored in-repo at src/lc0_torch — no install needed;
-#  huggingface_hub, tokenizers, etc. come in transitively via transformers.)
-
+# Core dependencies. GPU inference additionally requires compatible vLLM.
 torch==2.9.1
 transformers==4.57.6
 accelerate==1.13.0
-datasets==4.8.5          # major bump from 3.2.0 — load_from_disk API stable, but worth a smoke test
+datasets==4.8.5
 evaluate==0.4.4
 simple-parsing==0.1.7
 mosaicml-streaming==0.13.0
 chess==1.11.2
 zstandard==0.24.0
-numpy==2.1.3             # pinned <2.2 for mosaicml-streaming compatibility
+numpy==2.1.3
 tqdm==4.67.3
 protobuf==6.33.6
 PyYAML==6.0.3
-safetensors==0.7.0       # major bump from 0.4.5 — file format stable, load API unchanged
+safetensors==0.7.0
 liger-kernel==0.8.0
-
-# Plot/test deps (datagen/tests/*)
 matplotlib==3.10.9
 
-# Optional: training logs to Weights & Biases if `report_to=wandb` (HF Trainer
-# skips it silently when absent). Uncomment to enable.
+# Optional experiment logging:
 # wandb==0.26.1
