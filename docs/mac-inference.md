@@ -84,7 +84,9 @@ actual backend, token limit, finish reason, timing, raw output, and legal best m
 The CLI returns a recommendation only when an explicit `BEST_MOVE` passes
 piece, capture, POV, promotion, and legality checks. It reports null for truncated
 or unparseable recommendations, instead of the evaluation runner's random legal
-fallback. Other analysis prose and variations are model output and can be wrong.
+fallback. Out-of-range square references are marked invalid in displayed prose,
+and raw output is retained exactly. Other analysis prose and variations are model
+output and can be wrong.
 This CLI is not a UCI engine, and the Mac port has not been rated through full games.
 
 ## Reproducible environment
@@ -128,7 +130,7 @@ isolate architecture/layout errors from BF16 rounding.
 
 On the tested Mac, maximum absolute MLX/upstream logit differences were below
 0.000063; the MPS hooked decoder matched the upstream forward exactly. MLX's
-cached next-token comparisons were below 0.000056. Seventeen small tests passed.
+cached next-token comparisons were below 0.000056. Twenty-two small tests passed.
 
 Complete BF16 MLX smoke runs at the default sampled settings produced:
 

@@ -70,3 +70,27 @@ def test_truncated_promotion_never_defaults_to_queen(fen):
     assert result(board, raw, finish_reason="length")["best_move_uci"] is None
     complete = best_move(board, raw + "<PIECE_MQ>")
     assert complete is not None and complete.promotion == chess.QUEEN
+
+
+@pytest.mark.parametrize(
+    "fen",
+    [
+        chess.STARTING_FEN,
+        chess.STARTING_FEN.replace(" w ", " b "),
+    ],
+)
+@pytest.mark.parametrize("square", [0, 65])
+def test_result_formats_invalid_square_tokens_without_a_recommendation(fen, square):
+    raw = f"BEST_MOVE: <PIECE_MN><SQUARE_7><SQUARE_{square}>"
+    answer = result(chess.Board(fen), raw)
+    assert answer["best_move_uci"] is None
+    assert answer["raw_text"] == raw
+    assert f"[invalid square {square}]" in answer["text"]
+
+
+def test_invalid_prose_square_does_not_discard_an_explicit_legal_best_move():
+    raw = "ANALYSIS: Attack <SQUARE_65>\nBEST_MOVE: <PIECE_MN><SQUARE_7><SQUARE_22>"
+    answer = result(chess.Board(), raw)
+    assert answer["best_move_uci"] == "g1f3"
+    assert answer["raw_text"] == raw
+    assert "[invalid square 65]" in answer["text"]

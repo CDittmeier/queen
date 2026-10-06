@@ -97,6 +97,7 @@ def request_seed(seed: int, game_id: int, board: chess.Board) -> int:
 
 # The released model emits POV tokens, anchored to the ROOT side to move.
 _BEST = re.compile(r"(?m)^BEST_MOVE:\s*(.*)$")
+_SQUARE = re.compile(r"<SQUARE_(\d+)>")
 _MOVE = re.compile(
     r"<PIECE_([MO])([PNBRQK])>\s*<SQUARE_(\d+)>\s*"
     r"(?:<PIECE_([MO])([PNBRQK])>\s*)?<SQUARE_(\d+)>"
@@ -149,9 +150,17 @@ def best_move(board: chess.Board, raw: str) -> chess.Move | None:
 
 def result(board: chess.Board, raw: str, **metadata) -> dict:
     move = best_move(board, raw)
+    # The upstream translator assumes every square is in its 64-token vocabulary.
+    # Mark malformed square references in displayed prose; retain raw text exactly.
+    display_raw = _SQUARE.sub(
+        lambda match: (
+            match[0] if 1 <= int(match[1]) <= 64 else f"[invalid square {match[1]}]"
+        ),
+        raw,
+    )
     return {
         "fen": board.fen(),
-        "text": Translator(board.turn).decode_absolute(raw),
+        "text": Translator(board.turn).decode_absolute(display_raw),
         "raw_text": raw,
         "best_move_uci": move.uci() if move else None,
         "best_move_san": board.san(move) if move else None,
