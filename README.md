@@ -4,6 +4,48 @@ Extended README and clean code release coming soon! More detailed documentation
 will be released after we finish cleaning the code. You can download our models
 [here](https://huggingface.co/collections/princeton-nlp/queen-chess-models).
 
+## Apple silicon inference
+
+This fork adds inference with the published PAWN-8 weights on Apple silicon.
+MLX runs the SmolLM3 decoder and all 16 trained cross-attention layers; PyTorch
+MPS runs the LC0 board encoder once per position. No training or separate chess
+engine installation is required.
+
+### Play a live game locally
+
+After downloading the weights with the setup below:
+
+```bash
+uv run --frozen --group mac python -m mac_inference.web
+```
+
+Open [127.0.0.1:8765](http://127.0.0.1:8765). Play White or Black by clicking
+or dragging pieces. QUEEN stays loaded and streams an explanation for each reply.
+The game supports promotions, castling, en passant, takebacks, draw claims,
+resignation, and PGN export. All moves are checked by the rules engine; a missing
+or illegal AI recommendation leaves the board unchanged and offers a retry.
+
+The server listens only on your Mac. The UI uses local assets and requires no
+frontend build or additional packages. One game is shared by tabs on the server;
+refreshing preserves it, and stopping the server clears it. See
+[live game details](docs/mac-inference.md#live-game-demo).
+
+### CLI setup
+
+```bash
+uv sync --frozen --group mac
+uv run --frozen --group mac python -m mac_inference --download
+uv run --frozen --group mac python -m mac_inference \
+  --moves e2e4 e7e5 g1f3 b8c6 f1c4
+```
+
+The download is approximately 8.4 GiB and is checksum-verified. After the first
+download, inference is offline. Use `--fen '...'` for an arbitrary position,
+`--backend mps` for the PyTorch reference path, and `--json` or `--output analysis.json`
+for structured output. [Mac setup, runtime research, and validation](docs/mac-inference.md)
+describe the supported hardware and limits. The original setup below is for the
+upstream training and Linux environment, and is not needed for Mac inference.
+
 ## Setup
 
 ```bash
