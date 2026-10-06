@@ -40,6 +40,46 @@ safetensors load directly; there is no converted weight copy or quantization.
 
 ## Setup and run
 
+### Live game demo
+
+After the model download, run:
+
+```bash
+uv run --frozen --group mac python -m mac_inference.web
+```
+
+Open [http://127.0.0.1:8765](http://127.0.0.1:8765). The layout follows the
+[project demo](https://queen-project.github.io/#demo): board on the left,
+QUEEN's explanation on the right, and game moves below the board. This version
+plays a live game rather than replaying recorded analyses.
+
+Click a piece and destination, or drag it. New Game lets you pick White or Black;
+if you pick Black, QUEEN plays the first move. Promotion presents all four piece
+choices. Flip Board changes the view, Take Back removes your last turn and its AI
+reply, and PGN downloads your game. Checkmate, stalemate and automatic draws end
+the game; a Claim Draw button appears when the human can claim a threefold or
+fifty-move draw. You can also resign.
+
+QUEEN loads once on a dedicated worker and uses the actual board history for each
+turn. Explanations stream into the panel while it thinks. Only a legal model
+recommendation for the current position is applied. Invalid or missing model
+output offers a retry using a new sample, with no substitute engine or random
+fallback. Reset, takeback, and resignation supersede in-flight results so an old
+reply cannot change the new position. These controls preserve game history for
+repetition detection.
+
+The demo uses Python's standard-library HTTP server, plain HTML/CSS/JavaScript,
+and SVG chess pieces rendered by the existing `python-chess` dependency. It has
+no CDN assets or external network requirements after downloading the model.
+It binds to `127.0.0.1`, rejects foreign Host/Origin headers, and serves only
+explicit UI/API routes. It is a local demo, not a public hosting service.
+
+There is one in-memory game per server, shared across its browser tabs. Reloading
+the page preserves the game; stopping the server clears it. Use `--port 8766` to
+run another instance, or Ctrl+C in the terminal to stop this one.
+
+### CLI setup
+
 Tested on an M4 Max MacBook Pro with 128 GB unified memory and macOS 27.0.1.
 Allow approximately 8.4 GiB for the model plus the Python environment. Smaller
 Macs have not been validated. Use a recent Apple silicon macOS version with BF16

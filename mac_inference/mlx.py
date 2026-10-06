@@ -145,11 +145,12 @@ class MLXRunner:
         for index, bridge in enumerate(self.model.x_attn_layers):
             bridge.set_board(states[:, index])
 
-    def generate(self, tokenizer, ids, max_tokens, temperature, seed):
+    def generate(self, tokenizer, ids, max_tokens, temperature, seed, on_progress=None):
         mx.random.seed(seed)
         start = perf_counter()
         tokens = []
         last = None
+        last_progress = start
         for response in stream_generate(
             self.model,
             tokenizer,
@@ -159,6 +160,14 @@ class MLXRunner:
         ):
             tokens.append(response.token)
             last = response
+            if on_progress is not None:
+                now = perf_counter()
+                if now - last_progress >= 0.15 or response.finish_reason:
+                    visible = (
+                        tokens[:-1] if response.finish_reason == "stop" else tokens
+                    )
+                    on_progress(tokenizer.decode(visible, skip_special_tokens=False))
+                    last_progress = now
         elapsed = perf_counter() - start
         if last and last.finish_reason == "stop":
             tokens.pop()  # The final stream response contains the EOS token.

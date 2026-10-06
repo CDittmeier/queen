@@ -148,8 +148,7 @@ def best_move(board: chess.Board, raw: str) -> chess.Move | None:
     return move
 
 
-def result(board: chess.Board, raw: str, **metadata) -> dict:
-    move = best_move(board, raw)
+def decode_text(board: chess.Board, raw: str) -> str:
     # The upstream translator assumes every square is in its 64-token vocabulary.
     # Mark malformed square references in displayed prose; retain raw text exactly.
     display_raw = _SQUARE.sub(
@@ -158,9 +157,14 @@ def result(board: chess.Board, raw: str, **metadata) -> dict:
         ),
         raw,
     )
+    return Translator(board.turn).decode_absolute(display_raw)
+
+
+def result(board: chess.Board, raw: str, **metadata) -> dict:
+    move = best_move(board, raw)
     return {
         "fen": board.fen(),
-        "text": Translator(board.turn).decode_absolute(display_raw),
+        "text": decode_text(board, raw),
         "raw_text": raw,
         "best_move_uci": move.uci() if move else None,
         "best_move_san": board.san(move) if move else None,

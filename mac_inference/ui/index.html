@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Play QUEEN</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <header class="header">
+      <a class="brand" href="/" aria-label="QUEEN home"
+        ><span class="brand-icon">♛</span> QUEEN</a
+      >
+      <span class="header-caption"
+        >A chess opponent that explains its moves.</span
+      >
+      <span class="local-badge"
+        ><span id="connection-dot" class="dot"></span
+        ><span id="connection">Connecting</span></span
+      >
+    </header>
+    <main>
+      <div class="intro">
+        <div>
+          <p class="eyebrow">PLAY & UNDERSTAND</p>
+          <h1>Your move.</h1>
+        </div>
+        <button id="new-game" class="primary">
+          New game <span aria-hidden="true">↗</span>
+        </button>
+      </div>
+      <div class="game-layout">
+        <section class="board-column" aria-label="Live chess game">
+          <div class="player-bar">
+            <div id="top-avatar" class="avatar queen-avatar">♛</div>
+            <div>
+              <strong id="top-player">QUEEN</strong
+              ><span id="top-color">Black pieces</span>
+            </div>
+            <span id="top-turn" class="turn-pill"></span>
+          </div>
+          <div class="board-wrap">
+            <div id="board" class="board" aria-label="Chessboard"></div>
+          </div>
+          <div class="player-bar">
+            <div id="bottom-avatar" class="avatar human-avatar">Y</div>
+            <div>
+              <strong id="bottom-player">You</strong
+              ><span id="bottom-color">White pieces</span>
+            </div>
+            <span id="bottom-turn" class="turn-pill"></span>
+          </div>
+          <div class="game-status">
+            <span id="status-dot" class="dot"></span
+            ><strong id="status" role="status">Loading your board…</strong
+            ><span id="elapsed"></span>
+          </div>
+          <p id="hint" class="hint">
+            Click a piece, then a highlighted square. Or drag to move.
+          </p>
+          <div class="board-actions">
+            <button id="flip" class="quiet">⇅ Flip board</button
+            ><button id="undo" class="quiet" disabled>↶ Take back</button
+            ><button id="resign" class="quiet" disabled>Resign</button
+            ><button id="claim-draw" class="quiet" hidden>Claim draw</button
+            ><a
+              id="download"
+              class="quiet"
+              href="/api/pgn"
+              download="queen-game.pgn"
+              >↓ PGN</a
+            >
+          </div>
+          <div id="notice" class="notice" role="alert" hidden></div>
+          <section class="moves-section" aria-label="Move history">
+            <div class="section-label">
+              <h2>Moves</h2>
+              <span id="move-count">0 played</span>
+            </div>
+            <div id="moves" class="moves">
+              <span class="muted">The story of your game starts here.</span>
+            </div>
+          </section>
+        </section>
+        <aside class="explanation-panel" aria-label="QUEEN explanation">
+          <div class="explanation-header">
+            <div>
+              <p class="eyebrow">INSIDE THE MOVE</p>
+              <h2>QUEEN’s explanation</h2>
+            </div>
+            <span class="model-badge">PAWN-8</span>
+          </div>
+          <div id="analysis-summary" class="analysis-summary" hidden>
+            <strong id="analysis-move"></strong
+            ><span id="analysis-timing"></span>
+          </div>
+          <div id="explanation" class="explanation">
+            <div class="empty-explanation">
+              <div class="empty-piece" aria-hidden="true">♞</div>
+              <h3>Strong moves. Clear intentions.</h3>
+              <p>
+                Make your first move. QUEEN will play its reply and explain the
+                ideas behind it, right here.
+              </p>
+              <span class="small-note"
+                >A real game, running entirely on your Mac.</span
+              >
+            </div>
+          </div>
+          <div id="retry-box" class="retry-box" hidden>
+            <p id="ai-error"></p>
+            <button id="retry" class="primary">Try this turn again</button>
+          </div>
+          <div class="explanation-footer">
+            <span class="dot"></span> Live local inference
+            <span class="footer-note">Explanations can contain mistakes.</span>
+          </div>
+        </aside>
+      </div>
+    </main>
+    <dialog id="new-game-dialog">
+      <form id="new-game-form">
+        <p class="eyebrow">A FRESH BOARD</p>
+        <h2>Play against QUEEN</h2>
+        <p class="muted">Choose your pieces. White moves first.</p>
+        <label for="color">Play as</label
+        ><select id="color">
+          <option value="white">White</option>
+          <option value="black">Black</option>
+        </select>
+        <div class="dialog-actions">
+          <button type="button" id="cancel-new" class="quiet">Cancel</button
+          ><button type="submit" class="primary">Start game</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="promotion-dialog">
+      <p class="eyebrow">PROMOTION</p>
+      <h2>Choose your piece</h2>
+      <div class="promotion-options">
+        <button data-promotion="q">Queen</button
+        ><button data-promotion="r">Rook</button
+        ><button data-promotion="b">Bishop</button
+        ><button data-promotion="n">Knight</button>
+      </div>
+      <button id="cancel-promotion" class="quiet">Cancel</button>
+    </dialog>
+  </body>
+</html>

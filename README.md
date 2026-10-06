@@ -11,6 +11,27 @@ MLX runs the SmolLM3 decoder and all 16 trained cross-attention layers; PyTorch
 MPS runs the LC0 board encoder once per position. No training or separate chess
 engine installation is required.
 
+### Play a live game locally
+
+After downloading the weights with the setup below:
+
+```bash
+uv run --frozen --group mac python -m mac_inference.web
+```
+
+Open [127.0.0.1:8765](http://127.0.0.1:8765). Play White or Black by clicking
+or dragging pieces. QUEEN stays loaded and streams an explanation for each reply.
+The game supports promotions, castling, en passant, takebacks, draw claims,
+resignation, and PGN export. All moves are checked by the rules engine; a missing
+or illegal AI recommendation leaves the board unchanged and offers a retry.
+
+The server listens only on your Mac. The UI uses local assets and requires no
+frontend build or additional packages. One game is shared by tabs on the server;
+refreshing preserves it, and stopping the server clears it. See
+[live game details](docs/mac-inference.md#live-game-demo).
+
+### CLI setup
+
 ```bash
 uv sync --frozen --group mac
 uv run --frozen --group mac python -m mac_inference --download
