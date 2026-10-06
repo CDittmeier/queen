@@ -1,7 +1,7 @@
 import chess
 import pytest
 
-from mac_inference.common import best_move, request_seed
+from mac_inference.common import best_move, request_seed, result
 
 
 @pytest.mark.parametrize(
@@ -54,3 +54,19 @@ def test_unparseable_or_illegal_output_has_no_fallback(raw):
 
 def test_evaluation_seed_matches_published_initial_request():
     assert request_seed(20260823, 0, chess.Board()) == 917225541
+
+
+@pytest.mark.parametrize(
+    "fen",
+    [
+        "4k3/P7/8/8/8/8/8/4K3 w - - 0 1",
+        "4k3/8/8/8/8/8/p7/4K3 b - - 0 1",
+    ],
+)
+def test_truncated_promotion_never_defaults_to_queen(fen):
+    board = chess.Board(fen)
+    raw = "BEST_MOVE: <PIECE_MP><SQUARE_49><SQUARE_57>"
+    assert best_move(board, raw) is None
+    assert result(board, raw, finish_reason="length")["best_move_uci"] is None
+    complete = best_move(board, raw + "<PIECE_MQ>")
+    assert complete is not None and complete.promotion == chess.QUEEN

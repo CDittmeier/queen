@@ -33,7 +33,9 @@ Research checked October 6, 2026, against primary documentation and source:
 The selected architecture runs the unchanged FP32 LC0 encoder once per position,
 transfers its 16 × 64 × 1024 hidden states into MLX, and caches each bridge's board
 keys and values. Autoregressive generation then stays in MLX with the decoder's
-self-attention KV cache. Decoder and bridge inference use BF16. The original
+self-attention KV cache. Decoder and bridge inference use BF16. The published
+vLLM runner also casts the encoder to BF16; this Mac adapter keeps it in FP32.
+The original
 safetensors load directly; there is no converted weight copy or quantization.
 
 ## Setup and run
@@ -126,7 +128,7 @@ isolate architecture/layout errors from BF16 rounding.
 
 On the tested Mac, maximum absolute MLX/upstream logit differences were below
 0.000063; the MPS hooked decoder matched the upstream forward exactly. MLX's
-cached next-token comparisons were below 0.000056. Fifteen small tests passed.
+cached next-token comparisons were below 0.000056. Seventeen small tests passed.
 
 Complete BF16 MLX smoke runs at the default sampled settings produced:
 

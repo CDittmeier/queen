@@ -67,7 +67,7 @@ class BoardEncoder:
         if device == "mps" and not torch.backends.mps.is_available():
             raise RuntimeError("Apple GPU is unavailable; use an Apple silicon Mac.")
         self.device = device
-        # Keep the LC0 encoder in FP32, matching the released vLLM runner.
+        # Run the upstream LC0 encoder in FP32; decoder and bridges use BF16.
         self.model = (
             Lc0Bt4HFModel.from_pretrained(
                 directory / "lc0",
@@ -126,7 +126,8 @@ def best_move(board: chess.Board, raw: str) -> chess.Move | None:
         return None
     promotion = _PIECES[promo] if promo else None
     if piece.piece_type == chess.PAWN and chess.square_rank(target) in (0, 7):
-        promotion = promotion or chess.QUEEN
+        if promotion is None:
+            return None  # An unfinished promotion may have meant an underpromotion.
     move = chess.Move(source, target, promotion=promotion)
     if move not in board.legal_moves:
         return None
