@@ -1,4 +1,8 @@
 # Python
+.models/
+.mac-results/
+.pytest_cache/
+.ruff_cache/
 __pycache__/
 *.pyc
 *.pyo

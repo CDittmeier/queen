@@ -4,6 +4,27 @@ Extended README and clean code release coming soon! More detailed documentation
 will be released after we finish cleaning the code. You can download our models
 [here](https://huggingface.co/collections/princeton-nlp/queen-chess-models).
 
+## Apple silicon inference
+
+This fork adds inference with the published PAWN-8 weights on Apple silicon.
+MLX runs the SmolLM3 decoder and all 16 trained cross-attention layers; PyTorch
+MPS runs the LC0 board encoder once per position. No training or separate chess
+engine installation is required.
+
+```bash
+uv sync --frozen --group mac
+uv run --frozen --group mac python -m mac_inference --download
+uv run --frozen --group mac python -m mac_inference \
+  --moves e2e4 e7e5 g1f3 b8c6 f1c4
+```
+
+The download is approximately 8.4 GiB and is checksum-verified. After the first
+download, inference is offline. Use `--fen '...'` for an arbitrary position,
+`--backend mps` for the PyTorch reference path, and `--json` or `--output analysis.json`
+for structured output. [Mac setup, runtime research, and validation](docs/mac-inference.md)
+describe the supported hardware and limits. The original setup below is for the
+upstream training and Linux environment, and is not needed for Mac inference.
+
 ## Setup
 
 ```bash
