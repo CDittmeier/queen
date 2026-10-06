@@ -12,7 +12,7 @@ MPS runs the LC0 board encoder once per position. No training or separate chess
 engine installation is required.
 
 ### Play a live game locally
-
+<img width="1395" height="1144" alt="Screenshot 2026-10-06 at 5 09 50 PM" src="https://github.com/user-attachments/assets/8a33871d-af2f-43f4-97b4-a901a22c1184" />
 After downloading the weights with the setup below:
 
 ```bash
