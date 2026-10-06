@@ -126,6 +126,27 @@ function renderBoard() {
         canMove() && piece && colorOf(piece) === game.human,
       );
       button.addEventListener("dragstart", (event) => {
+        const image = button.querySelector("img");
+        if (!image?.complete || !image.naturalWidth) {
+          event.preventDefault();
+          return;
+        }
+        const bounds = image.getBoundingClientRect();
+        const preview = document.createElement("canvas");
+        preview.width = Math.max(1, Math.round(bounds.width));
+        preview.height = Math.max(1, Math.round(bounds.height));
+        const context = preview.getContext("2d");
+        if (!context) {
+          event.preventDefault();
+          return;
+        }
+        // Render only the SVG at its displayed size, with a transparent background.
+        context.drawImage(image, 0, 0, preview.width, preview.height);
+        event.dataTransfer.setDragImage(
+          preview,
+          preview.width / 2,
+          preview.height / 2,
+        );
         dragging = square;
         event.dataTransfer.setData("text/plain", square);
         event.dataTransfer.effectAllowed = "move";
