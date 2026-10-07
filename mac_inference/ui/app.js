@@ -300,7 +300,7 @@ const pieceLetters = {
 const pieceWord = Object.keys(pieceLetters).join("|");
 const movePattern = new RegExp(
   [
-    String.raw`(?:(?<number>\d+)\s*(?<dots>\.\.\.|…|\.)\s*`,
+    String.raw`(?:(?<number>\d+)\s*(?:\.\.\.|…|\.)\s*`,
     String.raw`|(?<bareDots>\.\.\.|…))?`,
     String.raw`(?<color>white|black) (?<piece>${pieceWord}) `,
     String.raw`(?<from>[a-h][1-8])`,
@@ -325,14 +325,14 @@ function parseMoves(paragraph) {
   const moves = [];
   let pendingReply = null; // Ply Black answers after "15.white …".
   for (const match of paragraph.matchAll(movePattern)) {
-    const { number, dots, bareDots, color, piece, from, to, capture } =
-      match.groups;
+    const { number, bareDots, color, piece, from, to, capture } = match.groups;
     const afterThe = /\bthe\s+$/i.test(paragraph.slice(0, match.index));
     const white = color === "white";
     let ply = null;
     if (!afterThe) {
-      // Ignore numbering that contradicts the side to move ("12.black …").
-      if (number && (dots === ".") === white) ply = Number(number) * 2 + !white;
+      // The color decides the side: QUEEN writes Black's moves as "1.black …"
+      // as well as "1...black …".
+      if (number) ply = Number(number) * 2 + !white;
       // "15.white pawn a5-a6 … ...black pawn b7-b6" means 15…b6.
       else if (bareDots && !white && pendingReply !== null) ply = pendingReply;
       pendingReply = ply !== null && white ? ply + 1 : null;
@@ -510,14 +510,16 @@ function annotate(paragraph, index) {
 }
 
 // Plays moves onto a FEN's piece map. Returns null if a move doesn't fit,
-// e.g. the line starts from a different position.
+// e.g. the line starts from a different position or skips a side's move.
 function playLine(fen, moves) {
   const position = pieces(fen);
   const moved = new Set();
+  let turn = fen.split(" ")[1] === "b" ? "black" : "white";
   for (const move of moves) {
     const { color, piece, from, to } = move;
     const moving = position[from];
     if (
+      color !== turn ||
       !moving ||
       colorOf(moving) !== color ||
       moving.toUpperCase() !== pieceLetters[piece] ||
@@ -539,6 +541,7 @@ function playLine(fen, moves) {
     const promotes = piece === "pawn" && (to[1] === "8" || to[1] === "1");
     position[to] = promotes ? (color === "white" ? "Q" : "q") : moving;
     moved.add(to);
+    turn = turn === "white" ? "black" : "white";
   }
   return { position, moved };
 }
