@@ -108,7 +108,7 @@ class LiveGame:
                 self._queue_ai()
             return self.snapshot()
 
-    def _push(self, move, actor):
+    def _push(self, move, actor, analysis=None):
         self.moves.append(
             {
                 "uci": move.uci(),
@@ -116,6 +116,7 @@ class LiveGame:
                 "color": "white" if self.board.turn else "black",
                 "number": self.board.fullmove_number,
                 "actor": actor,
+                "analysis": analysis,
             }
         )
         self.board.push(move)
@@ -206,7 +207,9 @@ class LiveGame:
                     self.phase = "error"
                     self.error = "QUEEN didn't return a legal move. Try again."
                     return
-                self._push(move, "queen")
+                # Keep QUEEN's output with its move so the history can replay it.
+                saved = {k: v for k, v in self.analysis.items() if k != "raw_text"}
+                self._push(move, "queen", saved)
                 if self.phase != "finished":
                     self.phase = "playing"
                 self.thinking_text = ""

@@ -80,6 +80,10 @@ def test_live_turns_preserve_history_and_reject_duplicate_moves(games):
     complete = wait_phase(game, "playing")
     assert [move["uci"] for move in complete["moves"]] == ["e2e4", "e7e5"]
     assert complete["analysis"]["fen"] == engine.calls[0][0]
+    human, queen = complete["moves"]
+    assert human["analysis"] is None
+    assert queen["analysis"]["text"] == "A completed test explanation."
+    assert queen["analysis"]["best_move_san"] == "e5"
     assert engine.calls[0][1] == [chess.Move.from_uci("e2e4")]
     human_move(game, "g1f3")
     wait_phase(game, "playing")

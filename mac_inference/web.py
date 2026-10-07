@@ -1,6 +1,7 @@
 """Serve a local live chess game: uv run --group mac python -m mac_inference.web."""
 
 import argparse
+import errno
 import json
 import logging
 import re
@@ -24,6 +25,8 @@ def piece_svg(code):
 
 
 def make_server(game, port=8765):
+    """Bind the server; ``game`` may be attached later as ``server.game``."""
+
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *_):
             pass
@@ -62,6 +65,7 @@ def make_server(game, port=8765):
         def do_GET(self):
             if not self.valid_host():
                 return
+            game = self.server.game
             path = urlsplit(self.path).path
             if path == "/api/state":
                 self.json(game.snapshot())
@@ -94,6 +98,7 @@ def make_server(game, port=8765):
             if self.headers.get("Content-Type", "").split(";")[0] != "application/json":
                 self.json({"error": "Expected JSON."}, 415)
                 return
+            game = self.server.game
             try:
                 size = int(self.headers.get("Content-Length", "0"))
                 if not 0 < size <= 8192:
@@ -122,7 +127,9 @@ def make_server(game, port=8765):
             except (ValueError, TypeError) as error:
                 self.json({"error": str(error)}, 400)
 
-    return ThreadingHTTPServer(("127.0.0.1", port), Handler)
+    server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
+    server.game = game
+    return server
 
 
 def main():
@@ -139,8 +146,19 @@ def main():
     if not (args.model_dir / "xattn.pt").is_file():
         parser.error("Download the model first: python -m mac_inference --download")
     logging.basicConfig(level=logging.INFO)
-    game = LiveGame(lambda: QueenEngine(args.model_dir))
-    server = make_server(game, args.port)
+    # Bind before loading the model so a busy port fails fast.
+    try:
+        server = make_server(None, args.port)
+    except OSError as error:
+        if error.errno != errno.EADDRINUSE:
+            raise
+        parser.exit(
+            1,
+            f"Port {args.port} is already in use. If QUEEN is already running, "
+            f"open http://127.0.0.1:{args.port}; otherwise choose another port "
+            "with --port.\n",
+        )
+    server.game = game = LiveGame(lambda: QueenEngine(args.model_dir))
     print(f"Play QUEEN at http://127.0.0.1:{server.server_port}", flush=True)
     try:
         server.serve_forever()

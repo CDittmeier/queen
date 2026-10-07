@@ -389,6 +389,24 @@ p {
   color: #274433;
   font-weight: 650;
 }
+button.move-san {
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+button.move-san:hover {
+  color: var(--green);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+button.move-san.viewing {
+  background: var(--green);
+  color: #fff;
+  font-weight: 650;
+}
 .muted {
   color: var(--muted);
   font-size: 13px;
@@ -449,6 +467,9 @@ p {
   color: #7b8974;
   margin-left: auto;
   font-size: 10px;
+}
+.analysis-summary .quiet {
+  font-size: 11px;
 }
 .explanation {
   overflow: auto;

@@ -18,6 +18,7 @@ let requestEpoch = 0;
 let boardKey = "";
 let movesKey = "";
 let explanationKey = "";
+let viewing = null; // Index of a past QUEEN move whose explanation is shown.
 let promotionMoves = [];
 
 function pieces(fen) {
@@ -214,7 +215,8 @@ function chooseMove(from, to) {
 }
 
 function renderMoves() {
-  const key = JSON.stringify(game.moves);
+  if (viewing !== null && !game.moves[viewing]?.analysis) viewing = null;
+  const key = viewing + "|" + JSON.stringify(game.moves);
   if (key === movesKey) return;
   movesKey = key;
   $("move-count").textContent = `${game.moves.length} played`;
@@ -233,24 +235,40 @@ function renderMoves() {
     number.textContent = first.number + ".";
     fragment.append(number);
     for (let j = 0; j < 2; j++) {
-      const item = game.moves[i + j];
-      const cell = document.createElement("span");
+      const index = i + j;
+      const item = game.moves[index];
+      const cell = document.createElement(item?.analysis ? "button" : "span");
       cell.className = "move-san";
       cell.textContent = item ? item.san : "—";
-      if (i + j === game.moves.length - 1) cell.classList.add("latest");
+      if (index === game.moves.length - 1) cell.classList.add("latest");
+      if (item?.analysis) {
+        cell.type = "button";
+        cell.title = "Show QUEEN’s explanation for this move";
+        cell.setAttribute("aria-pressed", String(index === viewing));
+        if (index === viewing) cell.classList.add("viewing");
+        cell.addEventListener("click", () => {
+          viewing = index === viewing ? null : index;
+          render();
+        });
+      }
       fragment.append(cell);
     }
   }
+  const scrollTop = $("moves").scrollTop;
   $("moves").replaceChildren(fragment);
-  $("moves").scrollTop = $("moves").scrollHeight;
+  $("moves").scrollTop = viewing === null ? $("moves").scrollHeight : scrollTop;
 }
 
 function renderExplanation() {
-  const thinking = game.phase === "thinking";
-  const text = thinking ? game.thinking_text : game.analysis?.text || "";
-  const key = game.phase + "|" + text;
+  const viewed = viewing === null ? null : game.moves[viewing]?.analysis;
+  const analysis = viewed || game.analysis;
+  const thinking = !viewed && game.phase === "thinking";
+  const text = thinking ? game.thinking_text : analysis?.text || "";
+  const key = [viewing, game.phase, text].join("|");
   if (key !== explanationKey) {
-    const wasThinking = explanationKey.startsWith("thinking|");
+    const [lastViewing, lastPhase] = explanationKey.split("|");
+    const wasThinking = lastPhase === "thinking";
+    const viewChanged = lastViewing !== String(viewing);
     explanationKey = key;
     if (text) {
       const prose = text
@@ -266,7 +284,7 @@ function renderExplanation() {
       });
       $("explanation").replaceChildren(fragment);
       if (thinking) $("explanation").scrollTop = $("explanation").scrollHeight;
-      else if (wasThinking) $("explanation").scrollTop = 0;
+      else if (wasThinking || viewChanged) $("explanation").scrollTop = 0;
     } else if (thinking) {
       const p = document.createElement("p");
       p.className = "thinking-placeholder";
@@ -278,9 +296,10 @@ function renderExplanation() {
       $("explanation").replaceChildren(emptyExplanation());
     }
   }
-  $("analysis-summary").hidden = thinking || !game.analysis?.best_move_san;
-  if (game.analysis?.best_move_san) {
-    const a = game.analysis;
+  $("analysis-summary").hidden = thinking || !analysis?.best_move_san;
+  $("show-latest").hidden = !viewed;
+  if (analysis?.best_move_san) {
+    const a = analysis;
     $("analysis-move").textContent =
       `QUEEN played ${a.move_number}${a.color === "black" ? "…" : "."} ${a.best_move_san}`;
     $("analysis-timing").textContent = `${a.generation_seconds.toFixed(1)}s`;
@@ -371,6 +390,7 @@ function acceptState(next) {
   if (!game || next.game_id !== game.game_id) {
     orientation = next.human;
     selected = null;
+    viewing = null;
     boardKey = "";
     movesKey = "";
     explanationKey = "";
@@ -384,6 +404,7 @@ async function action(path, body = {}) {
   const epoch = ++requestEpoch;
   pending = true;
   selected = null;
+  viewing = null;
   $("notice").hidden = true;
   render();
   try {
@@ -428,6 +449,10 @@ async function poll() {
 
 $("flip").addEventListener("click", () => {
   orientation = orientation === "white" ? "black" : "white";
+  render();
+});
+$("show-latest").addEventListener("click", () => {
+  viewing = null;
   render();
 });
 $("undo").addEventListener("click", () => action("/api/undo"));
