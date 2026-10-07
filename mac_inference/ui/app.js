@@ -24,6 +24,8 @@ let notationMode = loadPreference("queen.notation", false);
 let pieceIcons = loadPreference("queen.pieceIcons", true);
 let preview = null; // Hovered line on the board: { position, moved, key }.
 let previewBases = []; // FENs a hovered line may start from, best first.
+let marks = null; // Narrated squares: { squares: Map(square → kind), key }.
+let explanationParagraphs = []; // Rendered paragraphs: { text, tokens }.
 
 // Storage can be unavailable (e.g. blocked site data); fall back to defaults.
 function loadPreference(key, fallback) {
@@ -78,6 +80,7 @@ function renderBoard() {
     selected,
     pending,
     preview?.key,
+    marks?.key,
   ].join("|");
   if (key === boardKey) return;
   boardKey = key;
@@ -106,6 +109,8 @@ function renderBoard() {
       if (piece) button.classList.add("occupied");
       if (square === selected) button.classList.add("selected");
       if (preview?.moved.has(square)) button.classList.add("previewed");
+      if (marks?.squares.has(square))
+        button.classList.add("mark-" + marks.squares.get(square));
       if (
         !preview &&
         game.last_move &&
@@ -314,22 +319,24 @@ function isCastle({ piece, from, to }) {
 }
 
 // Returns the moves in a paragraph. `ply` is null when the text gives no
-// move number.
+// move number. Moves after "the" ("the white knight g1-f3") read as prose:
+// they are flagged and never numbered, badged, or chained into lines.
 function parseMoves(paragraph) {
   const moves = [];
   let pendingReply = null; // Ply Black answers after "15.white …".
   for (const match of paragraph.matchAll(movePattern)) {
-    // "the white knight g1-f3" reads as prose; leave it as written.
-    if (/\bthe\s+$/i.test(paragraph.slice(0, match.index))) continue;
     const { number, dots, bareDots, color, piece, from, to, capture } =
       match.groups;
+    const afterThe = /\bthe\s+$/i.test(paragraph.slice(0, match.index));
     const white = color === "white";
     let ply = null;
-    // Ignore numbering that contradicts the side to move ("12.black …").
-    if (number && (dots === ".") === white) ply = Number(number) * 2 + !white;
-    // "15.white pawn a5-a6 … ...black pawn b7-b6" means 15…b6.
-    else if (bareDots && !white && pendingReply !== null) ply = pendingReply;
-    pendingReply = ply !== null && white ? ply + 1 : null;
+    if (!afterThe) {
+      // Ignore numbering that contradicts the side to move ("12.black …").
+      if (number && (dots === ".") === white) ply = Number(number) * 2 + !white;
+      // "15.white pawn a5-a6 … ...black pawn b7-b6" means 15…b6.
+      else if (bareDots && !white && pendingReply !== null) ply = pendingReply;
+      pendingReply = ply !== null && white ? ply + 1 : null;
+    }
     moves.push({
       start: match.index,
       end: match.index + match[0].length,
@@ -340,9 +347,58 @@ function parseMoves(paragraph) {
       from,
       to,
       capture: Boolean(capture),
+      afterThe,
     });
   }
   return moves;
+}
+
+// Squares, ranges ("the a8-h1 diagonal"), and files ("the e-file") in prose.
+const mentionPattern =
+  /\b(?:(?<from>[a-h][1-8])-(?<to>[a-h][1-8])|(?<file>[a-h])-file|(?<square>[a-h][1-8]))\b/g;
+
+// Squares from `from` to `to` inclusive along a file, rank, or diagonal;
+// just the two ends when they don't share one.
+function squaresBetween(from, to) {
+  const df = to.charCodeAt(0) - from.charCodeAt(0);
+  const dr = to[1] - from[1];
+  if (df && dr && Math.abs(df) !== Math.abs(dr)) return [from, to];
+  const steps = Math.max(Math.abs(df), Math.abs(dr));
+  return Array.from(
+    { length: steps + 1 },
+    (_, i) =>
+      String.fromCharCode(from.charCodeAt(0) + Math.sign(df) * i) +
+      (Number(from[1]) + Math.sign(dr) * i),
+  );
+}
+
+// Splits a paragraph into moves and square mentions, in reading order.
+function tokenize(paragraph) {
+  const tokens = [];
+  const addMentions = (start, end) => {
+    for (const match of paragraph.slice(start, end).matchAll(mentionPattern)) {
+      const { from, to, file, square } = match.groups;
+      tokens.push({
+        start: start + match.index,
+        end: start + match.index + match[0].length,
+        squares: from
+          ? squaresBetween(from, to)
+          : file
+            ? [...Array(8)].map((_, i) => file + (i + 1))
+            : [square],
+        range: from ? [from, to] : null,
+        file,
+      });
+    }
+  };
+  let last = 0;
+  for (const move of parseMoves(paragraph)) {
+    addMentions(last, move.start);
+    tokens.push({ start: move.start, end: move.end, move });
+    last = move.end;
+  }
+  addMentions(last, paragraph.length);
+  return tokens;
 }
 
 function moveNumber(ply, white) {
@@ -414,28 +470,43 @@ function variations(moves, paragraph) {
   return lines;
 }
 
-function annotate(paragraph) {
-  const moves = parseMoves(paragraph);
-  const lines = variations(moves, paragraph);
-  // Hovering a move previews its line up to that move.
+// Renders a paragraph's tokens. Every token gets an element tagged
+// `data-token="paragraph:token"` so the voice-over can highlight it; with
+// notation on, numbered moves render as badges.
+function annotate(paragraph, index) {
+  const tokens = tokenize(paragraph);
+  const moves = tokens.map((token) => token.move).filter(Boolean);
+  const lines = variations(
+    moves.filter((move) => !move.afterThe),
+    paragraph,
+  );
+  // A move previews its line up to that move, or just itself.
   const lineUpTo = new Map();
   for (const line of lines) {
-    line.forEach(({ move }, index) =>
-      lineUpTo.set(move, line.slice(0, index + 1).map((entry) => entry.move)),
+    line.forEach(({ move }, i) =>
+      lineUpTo.set(move, line.slice(0, i + 1).map((entry) => entry.move)),
     );
   }
-  // Only numbered moves are marked up inline.
   const nodes = [];
   let last = 0;
-  for (const move of moves) {
-    if (move.ply === null) continue;
-    const badge = moveBadge(move, true);
-    previewOnHover(badge, lineUpTo.get(move) ?? [move]);
-    nodes.push(paragraph.slice(last, move.start), badge);
-    last = move.end;
-  }
+  tokens.forEach((token, i) => {
+    const { move } = token;
+    if (move) token.line = lineUpTo.get(move) ?? [move];
+    let element;
+    if (notationMode && move?.ply != null) {
+      element = moveBadge(move, true);
+      previewOnHover(element, token.line);
+    } else {
+      element = document.createElement("span");
+      element.className = "mention";
+      element.textContent = paragraph.slice(token.start, token.end);
+    }
+    element.dataset.token = `${index}:${i}`;
+    nodes.push(paragraph.slice(last, token.start), element);
+    last = token.end;
+  });
   nodes.push(paragraph.slice(last));
-  return { nodes, lines };
+  return { nodes, lines: notationMode ? lines : [], tokens };
 }
 
 // Plays moves onto a FEN's piece map. Returns null if a move doesn't fit,
@@ -543,16 +614,13 @@ function renderExplanation() {
           /\n(?:BEST_MOVE|CRITICAL_LINE|PRINCIPAL_VARIATION|PROMISING_MOVES|EVALUATION):/,
         )[0];
       const fragment = document.createDocumentFragment();
-      prose.split(/\n\s*\n/).forEach((paragraph) => {
+      explanationParagraphs = prose.split(/\n\s*\n/).map((paragraph, i) => {
+        const { nodes, lines, tokens } = annotate(paragraph, i);
         const p = document.createElement("p");
-        if (!notationMode) {
-          p.textContent = paragraph;
-          fragment.append(p);
-          return;
-        }
-        const { nodes, lines } = annotate(paragraph);
+        p.dataset.paragraph = i;
         p.append(...nodes);
         fragment.append(p, ...lines.map(lineBlock));
+        return { text: paragraph, tokens };
       });
       $("explanation").classList.toggle("letters", !pieceIcons);
       $("explanation").replaceChildren(fragment);
@@ -568,6 +636,8 @@ function renderExplanation() {
     } else {
       $("explanation").replaceChildren(emptyExplanation());
     }
+    if (!text) explanationParagraphs = [];
+    narrationRendered();
   }
   $("analysis-summary").hidden = thinking || !analysis?.best_move_san;
   $("show-latest").hidden = !viewed;

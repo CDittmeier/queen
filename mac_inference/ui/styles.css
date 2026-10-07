@@ -246,6 +246,26 @@ p {
 .square.in-check {
   background: #cb8372;
 }
+/* Voice-over highlights: a spoken move's squares, or a square, line, or file. */
+.square {
+  transition: box-shadow 0.2s;
+}
+.square.mark-path {
+  box-shadow: inset 0 0 0 100vmax #31534633;
+}
+.square.mark-focus {
+  box-shadow:
+    inset 0 0 0 3px var(--green),
+    inset 0 0 0 100vmax #31534629;
+}
+.square.mark-from {
+  box-shadow: inset 0 0 0 100vmax #d9b44a40;
+}
+.square.mark-to {
+  box-shadow:
+    inset 0 0 0 3px #c79a2a,
+    inset 0 0 0 100vmax #d9b44a55;
+}
 .square.previewed img {
   opacity: 0.45;
 }
@@ -521,6 +541,11 @@ button.move-san.viewing {
 .analysis-summary .quiet {
   font-size: 11px;
 }
+.analysis-summary .listen {
+  margin-left: auto;
+  color: var(--green);
+  font-weight: 600;
+}
 .explanation {
   overflow: auto;
   flex: 1;
@@ -595,6 +620,29 @@ button.move-san.viewing {
   font-size: 9px;
   letter-spacing: 1.2px;
   text-transform: uppercase;
+}
+/* While narrating, the spoken paragraph and token stand out. */
+.explanation > p,
+.variation {
+  transition: opacity 0.3s;
+}
+.explanation.narrating > p:not(.speaking),
+.explanation.narrating .variation {
+  opacity: 0.45;
+}
+.mention.speaking {
+  border-radius: 3px;
+  background: #f1e3ad;
+  box-shadow: 0 0 0 2px #f1e3ad;
+}
+.notation.speaking {
+  border-color: #c79a2a;
+  background: #f6ebc4;
+}
+.letters .notation.speaking {
+  border-radius: 3px;
+  background: #f1e3ad;
+  box-shadow: 0 0 0 2px #f1e3ad;
 }
 /* Without piece icons, moves read as bold inline text: "5...dxe5 6.fxe5". */
 .letters .notation {

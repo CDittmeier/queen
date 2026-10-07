@@ -44,6 +44,14 @@ def test_serves_the_board_assets_and_initial_game_state(server):
     assert state["human"] == "white" and len(state["legal_moves"]) == 20
 
 
+def test_voice_endpoints_without_a_key(server, monkeypatch):
+    assert json.loads(request(server, "GET", "/api/voice")[1]) == {"enabled": False}
+    assert request(server, "GET", "/voice.js")[0] == 200
+    headers = {"Content-Type": "application/json"}
+    status, body, _ = request(server, "POST", "/api/speak", {"text": "Hi"}, headers)
+    assert status == 503 and b"ELEVENLABS_API_KEY" in body
+
+
 def test_rejects_cross_origin_and_rebinding_hosts(server):
     headers = {"Content-Type": "application/json", "Origin": "https://other.example"}
     assert request(server, "POST", "/api/new", {"color": "white"}, headers)[0] == 403

@@ -6,6 +6,7 @@
     <title>Play QUEEN</title>
     <link rel="stylesheet" href="/styles.css" />
     <script src="/app.js" defer></script>
+    <script src="/voice.js" defer></script>
   </head>
   <body>
     <header class="header">
@@ -94,7 +95,10 @@
           <div id="analysis-summary" class="analysis-summary" hidden>
             <strong id="analysis-move"></strong
             ><span id="analysis-timing"></span
-            ><button id="show-latest" class="quiet" hidden>Show latest</button>
+            ><button id="show-latest" class="quiet" hidden>Show latest</button
+            ><button id="listen" class="quiet listen" aria-pressed="false" hidden>
+              Listen
+            </button>
           </div>
           <div id="explanation" class="explanation">
             <div class="empty-explanation">

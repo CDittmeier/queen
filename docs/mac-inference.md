@@ -78,6 +78,26 @@ There is one in-memory game per server, shared across its browser tabs. Reloadin
 the page preserves the game; stopping the server clears it. Use `--port 8766` to
 run another instance, or Ctrl+C in the terminal to stop this one.
 
+### Voice-over (optional)
+
+The Listen button reads QUEEN's explanation aloud with
+[ElevenLabs](https://elevenlabs.io/docs/api-reference/text-to-speech/convert-with-timestamps)
+and highlights each move, square, line, and file on the board as it is spoken.
+Add a key with text-to-speech permission to `.env` in the repository root, then
+restart the server:
+
+```bash
+ELEVENLABS_API_KEY=...
+# Optional overrides:
+# ELEVENLABS_VOICE_ID=JBFqnCBsd6RMkjVDRZzb
+# ELEVENLABS_MODEL_ID=eleven_multilingual_v2
+```
+
+The key stays on the local server; the browser only talks to `127.0.0.1`.
+Speech is requested one paragraph at a time and only when you press Listen;
+replays are cached for the life of the server. Without a key the button is
+hidden.
+
 ### CLI setup
 
 Tested on an M4 Max MacBook Pro with 128 GB unified memory and macOS 27.0.1.

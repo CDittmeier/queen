@@ -64,3 +64,6 @@ hanoi/
 
 # helpers
 helpers/
+
+# Local secrets
+.env

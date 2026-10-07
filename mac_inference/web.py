@@ -14,8 +14,10 @@ import chess
 import chess.svg
 
 from .game import GameError, LiveGame, QueenEngine
+from .voice import Voice, VoiceError, load_env
 
 ASSETS = Path(__file__).resolve().parent / "ui"
+REPO = Path(__file__).resolve().parents[1]
 
 
 @lru_cache(maxsize=12)
@@ -40,7 +42,8 @@ def make_server(game, port=8765):
             self.send_header(
                 "Content-Security-Policy",
                 "default-src 'self'; script-src 'self'; style-src 'self'; "
-                "img-src 'self'; connect-src 'self'; frame-ancestors 'none'",
+                "img-src 'self'; media-src 'self' blob:; connect-src 'self'; "
+                "frame-ancestors 'none'",
             )
             if filename:
                 self.send_header(
@@ -69,6 +72,8 @@ def make_server(game, port=8765):
             path = urlsplit(self.path).path
             if path == "/api/state":
                 self.json(game.snapshot())
+            elif path == "/api/voice":
+                self.json({"enabled": self.server.voice.enabled})
             elif path == "/api/pgn":
                 self.send(
                     game.pgn().encode(),
@@ -77,11 +82,12 @@ def make_server(game, port=8765):
                 )
             elif re.fullmatch(r"/pieces/[wb][PNBRQK]\.svg", path):
                 self.send(piece_svg(path[-6:-4]), "image/svg+xml")
-            elif path in ("/", "/app.js", "/styles.css"):
+            elif path in ("/", "/app.js", "/voice.js", "/styles.css"):
                 name = "index.html" if path == "/" else path[1:]
                 mime = {
                     "index.html": "text/html",
                     "app.js": "text/javascript",
+                    "voice.js": "text/javascript",
                     "styles.css": "text/css",
                 }[name]
                 self.send((ASSETS / name).read_bytes(), mime + "; charset=utf-8")
@@ -108,6 +114,9 @@ def make_server(game, port=8765):
                     raise GameError("Expected a JSON object.")
                 path = urlsplit(self.path).path
                 game_id, version = body.get("game_id"), body.get("version")
+                if path == "/api/speak":
+                    self.json(self.server.voice.speak(body.get("text")))
+                    return
                 if path == "/api/new":
                     answer = game.new_game(body.get("color"))
                 elif path == "/api/move":
@@ -124,11 +133,14 @@ def make_server(game, port=8765):
                     self.json({"error": "Not found"}, 404)
                     return
                 self.json(answer)
+            except VoiceError as error:
+                self.json({"error": str(error)}, error.status)
             except (ValueError, TypeError) as error:
                 self.json({"error": str(error)}, 400)
 
     server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
     server.game = game
+    server.voice = Voice.from_env()
     return server
 
 
@@ -146,6 +158,7 @@ def main():
     if not (args.model_dir / "xattn.pt").is_file():
         parser.error("Download the model first: python -m mac_inference --download")
     logging.basicConfig(level=logging.INFO)
+    load_env(REPO / ".env")
     # Bind before loading the model so a busy port fails fast.
     try:
         server = make_server(None, args.port)
