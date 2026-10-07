@@ -637,7 +637,8 @@ function renderExplanation() {
       $("explanation").replaceChildren(emptyExplanation());
     }
     if (!text) explanationParagraphs = [];
-    narrationRendered();
+    // Lets the optional voice-over restore or stop its highlights.
+    $("explanation").dispatchEvent(new Event("rendered"));
   }
   $("analysis-summary").hidden = thinking || !analysis?.best_move_san;
   $("show-latest").hidden = !viewed;

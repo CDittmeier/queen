@@ -189,14 +189,6 @@ function narratedText() {
   return explanationParagraphs.map((paragraph) => paragraph.text).join("\n\n");
 }
 
-// Called after the explanation re-renders: stop if the text changed (a new
-// move or a different explanation), otherwise restore the highlights.
-function narrationRendered() {
-  if (!narration) return;
-  if (narration.text !== narratedText()) stopNarration();
-  else applyCue();
-}
-
 function renderVoiceButton() {
   const button = $("listen");
   const loading = narration && !narration.audio;
@@ -204,6 +196,13 @@ function renderVoiceButton() {
   button.setAttribute("aria-pressed", String(Boolean(narration)));
 }
 
+// After the explanation re-renders, stop if the text changed (a new move or a
+// different explanation); otherwise restore the highlights.
+$("explanation").addEventListener("rendered", () => {
+  if (!narration) return;
+  if (narration.text !== narratedText()) stopNarration();
+  else applyCue();
+});
 $("listen").addEventListener("click", () => {
   if (narration) stopNarration();
   else startNarration();
