@@ -85,6 +85,15 @@ async function startNarration() {
     .filter((part) => /[a-z]/i.test(part.script));
   if (!parts.length) return;
   narration = { id, text: narratedText(), parts, part: null, cue: null };
+  // Rest on the position QUEEN analyzed, before its reply was played.
+  const fen = previewBases[0];
+  restingPreview = fen && {
+    position: pieces(fen),
+    moved: new Set(),
+    key: "rest " + fen,
+    fen,
+  };
+  clearLine();
   renderVoiceButton();
   try {
     for (const [i, part] of parts.entries()) {
@@ -110,7 +119,7 @@ function playPart(part, speech, id) {
     const url = audioUrl(speech.audio);
     const audio = new Audio(url);
     Object.assign(narration, { part, cue: null, audio, url });
-    clearLine(); // Each paragraph starts from the real board.
+    clearLine(); // Each paragraph starts from the analyzed position.
     applyCue();
     const finish = () => {
       cancelAnimationFrame(narration?.frame);
@@ -160,7 +169,7 @@ function applyCue() {
   const token = cue && explanationParagraphs[part.index]?.tokens[cue.index];
   let squares = null;
   if (token?.move) {
-    showLine(token.line);
+    if (!showLine(token.line)) clearLine();
     squares = new Map([
       [token.move.from, "from"],
       [token.move.to, "to"],
@@ -181,6 +190,7 @@ function stopNarration() {
   audio?.pause();
   if (url) URL.revokeObjectURL(url);
   applyCue();
+  restingPreview = null;
   clearLine();
   renderVoiceButton();
 }

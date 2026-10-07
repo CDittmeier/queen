@@ -23,6 +23,9 @@ let promotionMoves = [];
 let notationMode = loadPreference("queen.notation", false);
 let pieceIcons = loadPreference("queen.pieceIcons", true);
 let preview = null; // Hovered line on the board: { position, moved, key }.
+// Board shown when no line is previewed, instead of the game; the voice-over
+// rests on the analyzed position so QUEEN's reply isn't revealed early.
+let restingPreview = null; // { position, moved, key, fen }
 let previewBases = []; // FENs a hovered line may start from, best first.
 let marks = null; // Narrated squares: { squares: Map(square → kind), key }.
 let explanationParagraphs = []; // Rendered paragraphs: { text, tokens }.
@@ -546,20 +549,23 @@ function playLine(fen, moves) {
   return { position, moved };
 }
 
+// Previews a line; returns whether it fit any starting position.
 function showLine(moves) {
-  for (const fen of previewBases) {
+  const bases = restingPreview ? [restingPreview.fen] : previewBases;
+  for (const fen of bases) {
     const played = fen && playLine(fen, moves);
     if (played) {
       preview = { ...played, key: moves.map((m) => m.from + m.to).join(" ") };
       renderBoard();
-      return;
+      return true;
     }
   }
+  return false;
 }
 
 function clearLine() {
-  if (!preview) return;
-  preview = null;
+  if (preview === restingPreview) return;
+  preview = restingPreview;
   renderBoard();
 }
 
